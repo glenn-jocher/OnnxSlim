@@ -155,6 +155,7 @@ class Logger(object):
     # message may be a callable which returns a message. This way, only if the message needs to be logged is it ever generated.
     def log(self, message, severity, mode=LogMode.EACH, stack_depth=2):
         """Logs the given message with specified severity and log mode, optionally including stack trace depth for line information."""
+
         def process_message(message, stack_depth):
             def get_prefix():
                 def get_line_info():

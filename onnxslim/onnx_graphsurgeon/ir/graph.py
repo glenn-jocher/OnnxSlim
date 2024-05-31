@@ -550,6 +550,7 @@ class Graph(object):
 
             def get_inputs(node_or_func):
                 """Find all nodes used by a given node or function."""
+
                 def get_used_nodes(node):
                     inputs = {}
 
@@ -914,6 +915,7 @@ class Graph(object):
 
         def update_foldable_outputs(graph_constants):
             """Updates the graph's outputs to ensure certain operations remain foldable."""
+
             def is_foldable(node):
                 NO_FOLD_OPS = [
                     "QuantizeLinear",
@@ -1089,6 +1091,7 @@ class Graph(object):
 
         def partition_and_infer(subgraph):
             """Evaluates and partitions the subgraph to infer constant values using ONNX-Runtime."""
+
             def get_out_node_ids():
                 # Gets the final output nodes - producer nodes of graph output tensors without other outputs.
                 with subgraph.node_ids():
