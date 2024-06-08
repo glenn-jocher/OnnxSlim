@@ -398,7 +398,7 @@ class SymbolicShapeInference:
                     if self.auto_merge_:
                         self._add_suggested_merge([dim1, dim2], apply=True)
                     else:
-                        logger.warning(f"unsupported broadcast between {str(dim1)}" + " " + str(dim2))
+                        logger.warning(f"unsupported broadcast between {str(dim1)} " + str(dim2))
             new_shape = [new_dim, *new_shape]
         return new_shape
 
@@ -2728,9 +2728,7 @@ class SymbolicShapeInference:
         """Check if dimension value is a string representing an unknown dimension that is not in symbolic_dims_."""
         if type(dim_value) != str:  # noqa: E721
             return False
-        if "unk__" not in dim_value:
-            return False
-        return dim_value not in self.symbolic_dims_
+        return dim_value not in self.symbolic_dims_ if "unk__" in dim_value else False
 
     def _is_shape_contains_none_dim(self, out_shape):
         """Check if any dimension in the given shape contains the 'None' dimension and return it if found."""
@@ -3003,7 +3001,11 @@ class SymbolicShapeInference:
                         self.run_ = False
 
                     # create new dynamic dims for ops not handled by symbolic shape inference
-                    if self.run_ is False and node.op_type not in self.dispatcher_ and not known_aten_op:
+                    if (
+                        not self.run_
+                        and node.op_type not in self.dispatcher_
+                        and not known_aten_op
+                    ):
                         is_unknown_op = out_type_undefined and (out_shape is None or len(out_shape) == 0)
                         if is_unknown_op:
                             # unknown op to ONNX, maybe from higher opset or other domain

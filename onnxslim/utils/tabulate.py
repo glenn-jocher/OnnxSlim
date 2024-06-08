@@ -2139,7 +2139,7 @@ def tabulate(
                 stacklevel=2,
             )
         for idx, align in enumerate(colalign):
-            if not idx < len(aligns):
+            if idx >= len(aligns):
                 break
             elif align != "global":
                 aligns[idx] = align

@@ -971,10 +971,7 @@ class Graph(object):
             inp = node.inputs[index]
 
             # If the input was already found to be a constant, it will be folded anyway.
-            if inp.name in graph_constants:
-                return None
-
-            return inp
+            return None if inp.name in graph_constants else inp
 
         def get_scalar_value(tensor):
             """Gets the scalar value of a constant tensor with a single item."""

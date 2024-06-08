@@ -95,7 +95,7 @@ def summarize_model(model: onnx.ModelProto) -> Dict:
         for input in inputs:
             type_str, shape = get_tensor_dtype_shape(input)
             if shape:
-                op_shape_info[input.name] = f"{str(type_str)}: {str(tuple(shape))}"
+                op_shape_info[input.name] = f"{str(type_str)}: {tuple(shape)}"
             else:
                 op_shape_info[input.name] = f"{str(type_str)}: None"
 
