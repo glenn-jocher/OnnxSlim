@@ -3001,11 +3001,7 @@ class SymbolicShapeInference:
                         self.run_ = False
 
                     # create new dynamic dims for ops not handled by symbolic shape inference
-                    if (
-                        not self.run_
-                        and node.op_type not in self.dispatcher_
-                        and not known_aten_op
-                    ):
+                    if not self.run_ and node.op_type not in self.dispatcher_ and not known_aten_op:
                         is_unknown_op = out_type_undefined and (out_shape is None or len(out_shape) == 0)
                         if is_unknown_op:
                             # unknown op to ONNX, maybe from higher opset or other domain
