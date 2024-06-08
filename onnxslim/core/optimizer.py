@@ -109,7 +109,7 @@ def graph_constant_fold_inplace(graph):
     nodes.
     """
     for node in graph.nodes:
-        if node.op in ["Identity", "Dropout"]:
+        if node.op in {"Identity", "Dropout"}:
             delete_node(node)
 
         elif node.op == "Pad":
