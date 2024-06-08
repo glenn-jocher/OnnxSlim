@@ -219,7 +219,7 @@ def find_conv_transpose_nodes(node, opset):
     """X | Conv/ConvTranspose | BatchNormalization."""
     # fmt: on
     match = {}
-    if node.op == "BatchNormalization" and node.i(0).op in ["ConvTranspose","Conv"]:
+    if node.op == "BatchNormalization" and node.i(0).op in ["ConvTranspose", "Conv"]:
         conv_transpose_node = node.i(0)
         conv_transpose_node_users = get_node_users(conv_transpose_node)
         if len(conv_transpose_node_users) == 1:
