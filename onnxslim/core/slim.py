@@ -56,11 +56,11 @@ def init_logging(verbose=False):
 def get_opset(model: onnx.ModelProto) -> int:
     try:
         for importer in model.opset_import:
-            if importer.domain == "" or importer.domain == "ai.onnx":
+            if importer.domain in ["", "ai.onnx"]:
                 return importer.version
 
         return None
-    except:
+    except Exception:
         return None
 
 
@@ -95,9 +95,9 @@ def summarize_model(model: onnx.ModelProto) -> Dict:
         for input in inputs:
             type_str, shape = get_tensor_dtype_shape(input)
             if shape:
-                op_shape_info[input.name] = str(type_str) + ": " + str(tuple(shape))
+                op_shape_info[input.name] = f"{str(type_str)}: {str(tuple(shape))}"
             else:
-                op_shape_info[input.name] = str(type_str) + ": None"
+                op_shape_info[input.name] = f"{str(type_str)}: None"
 
         return op_shape_info
 
@@ -132,7 +132,7 @@ def summarize_model(model: onnx.ModelProto) -> Dict:
 
 def model_save_as_external_data(model: onnx.ModelProto, model_path: str):
     """Save an ONNX model with tensor data as an external file."""
-    location = os.path.basename(model_path) + ".data"
+    location = f"{os.path.basename(model_path)}.data"
     if os.path.exists(location):
         os.remove(location)
     onnx.save(
@@ -181,7 +181,7 @@ def output_modification(model: onnx.ModelProto, outputs: str) -> onnx.ModelProto
             if key not in tensors.keys():
                 raise Exception(f"Output name {key} not found in model, available keys: {' '.join(tensors.keys())}")
             dtype = tensors[key].dtype
-            if dtype == None:
+            if dtype is None:
                 dtype = np.float32
                 logger.warning(f"Output layer {key} has no dtype, set to default {dtype}")
         else:
@@ -219,7 +219,7 @@ def shape_infer(model: onnx.ModelProto):
     try:
         logger.debug("try onnxruntime shape infer.")
         model = SymbolicShapeInference.infer_shapes(model, auto_merge=AUTO_MERGE)
-    except:
+    except Exception:
         logger.debug("onnxruntime shape infer failed, try onnx shape infer.")
         if model.ByteSize() >= checker.MAXIMUM_PROTOBUF:
             tmp_dir = tempfile.TemporaryDirectory()
@@ -255,9 +255,7 @@ def optimize(model: onnx.ModelProto, skip_fusion_patterns: str = None):
 
 def check_point(model: onnx.ModelProto):
     """Imports an ONNX model checkpoint into a Graphsurgeon graph representation."""
-    graph_check_point = gs.import_onnx(model)
-
-    return graph_check_point
+    return gs.import_onnx(model)
 
 
 def is_converged(model: onnx.ModelProto, graph_ckpt, iter: int) -> bool:
@@ -282,7 +280,7 @@ def convert_data_format(model: onnx.ModelProto, dtype: str) -> onnx.ModelProto:
         for node in graph.nodes:
             if node.op == "Cast":
                 inp_dtype = [input.dtype for input in node.inputs][0]
-                if inp_dtype == np.float16 or inp_dtype == np.float32:
+                if inp_dtype in [np.float16, np.float32]:
                     delete_node(node)
 
         for tensor in graph.tensors().values():
@@ -305,15 +303,15 @@ def save(model: onnx.ModelProto, model_path: str, model_check: bool = False):
         except ValueError:
             logger.warning("Model too large and cannot be checked.")
 
-    if model_path:
+    if model_path:  # model larger than 2GB can be saved, but compiler like trtexec won't parse it
         if (
             model.ByteSize() <= checker.MAXIMUM_PROTOBUF
-        ):  # model larger than 2GB can be saved, but compiler like trtexec won't parse it
+        ):
             onnx.save(model, model_path)
         else:
             import os
 
-            location = os.path.basename(model_path) + ".data"
+            location = f"{os.path.basename(model_path)}.data"
             if os.path.exists(location):
                 os.remove(location)
             onnx.save(
@@ -332,8 +330,8 @@ def check_result(raw_onnx_output, slimmed_onnx_output):
     """
     if set(raw_onnx_output.keys()) != set(slimmed_onnx_output.keys()):
         logger.warning("Model output mismatch after slimming.")
-        logger.warning("Raw model output keys: {}".format(raw_onnx_output.keys()))
-        logger.warning("Slimmed model output keys: {}".format(slimmed_onnx_output.keys()))
+        logger.warning(f"Raw model output keys: {raw_onnx_output.keys()}")
+        logger.warning(f"Slimmed model output keys: {slimmed_onnx_output.keys()}")
         logger.warning("Please check the model carefully.")
         return
     else:
@@ -355,7 +353,7 @@ def freeze(model: onnx.ModelProto):
     inputs = model.graph.input
     name_to_input = {}
     for input in inputs:
-        if input.name in name_to_input.keys():
+        if input.name in name_to_input:
             logger.warning(f"Duplicate input name: {input.name}")
         name_to_input[input.name] = input
 

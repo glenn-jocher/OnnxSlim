@@ -237,8 +237,4 @@ def sequences_equal(seq1, seq2):
     if not length_match:
         return False
 
-    for elem1, elem2 in zip(seq1, seq2):
-        if elem1 != elem2:
-            return False
-
-    return True
+    return all(elem1 == elem2 for elem1, elem2 in zip(seq1, seq2))

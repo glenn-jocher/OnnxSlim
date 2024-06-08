@@ -69,13 +69,12 @@ def gen_onnxruntime_input_data(
         for model_check_input in model_check_inputs:
             key, value = model_check_input.rsplit(":", 1)
             if value.endswith(".npy"):
-                if key in input_info:
-                    data = np.load(value)
-                    input_info[key] = {"data": data}
-                else:
+                if key not in input_info:
                     raise Exception(
                         f"model_check_input name:{key} not found in model, available keys: {' '.join(input_info.keys())}"
                     )
+                data = np.load(value)
+                input_info[key] = {"data": data}
             else:
                 values_list = [int(val) for val in value.split(",")]
                 if key in input_info:
@@ -91,7 +90,7 @@ def gen_onnxruntime_input_data(
             input_data_dict[name] = info["data"]
         else:
             shapes = [shape if (shape != -1 and not isinstance(shape, str)) else 1 for shape in info["shape"]]
-            shapes = shapes if shapes else [1]
+            shapes = shapes or [1]
             dtype = info["dtype"]
 
             if dtype in [np.int32, np.int64]:
@@ -117,22 +116,29 @@ def onnxruntime_inference(model: onnx.ModelProto, input_data: dict) -> Dict[str,
 
 def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elapsed_time: float = None):
     """Prints the model information as a formatted table for the given model name and list of model details."""
-    assert len(model_info_list) > 0, "model_info_list must contain more than one model info"
+    assert model_info_list, "model_info_list must contain more than one model info"
 
     final_op_info = []
     if len(model_info_list) == 1:
-        final_op_info.append(["Model Name", model_name])
-        final_op_info.append([SEPARATING_LINE])
-        final_op_info.append(["Op Set ", model_info_list[0]["op_set"]])
+        final_op_info.extend(
+            (
+                ["Model Name", model_name],
+                [SEPARATING_LINE],
+                ["Op Set ", model_info_list[0]["op_set"]],
+            )
+        )
     else:
         final_op_info.append(
             ["Model Name", model_name, "Op Set: " + model_info_list[0]["op_set"]] + [""] * (len(model_info_list) - 2)
         )
-    final_op_info.append([SEPARATING_LINE])
-
-    final_op_info.append(["Model Info", "Original Model"] + ["Slimmed Model"] * (len(model_info_list) - 1))
-    final_op_info.append([SEPARATING_LINE] * (len(model_info_list) + 1))
-
+    final_op_info.extend(
+        (
+            [SEPARATING_LINE],
+            ["Model Info", "Original Model"]
+            + ["Slimmed Model"] * (len(model_info_list) - 1),
+            [SEPARATING_LINE] * (len(model_info_list) + 1),
+        )
+    )
     all_inputs = list(model_info_list[0]["op_input_info"].keys())
 
     for inputs in all_inputs:
@@ -144,7 +150,11 @@ def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elap
             input_info_list.append(inputs_shape)
         final_op_info.append(input_info_list)
 
-    all_outputs = set(op_type for model_info in model_info_list for op_type in model_info.get("op_output_info", {}))
+    all_outputs = {
+        op_type
+        for model_info in model_info_list
+        for op_type in model_info.get("op_output_info", {})
+    }
 
     for outputs in all_outputs:
         output_info_list = [
@@ -157,9 +167,12 @@ def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elap
 
     final_op_info.append([SEPARATING_LINE] * (len(model_info_list) + 1))
 
-    all_ops = set(op_type for model_info in model_info_list for op_type in model_info.get("op_type_counts", {}))
-    sorted_ops = list(all_ops)
-    sorted_ops.sort()
+    all_ops = {
+        op_type
+        for model_info in model_info_list
+        for op_type in model_info.get("op_type_counts", {})
+    }
+    sorted_ops = sorted(all_ops)
     for op in sorted_ops:
         op_info_list = [op]
         float_number = model_info_list[0]["op_type_counts"].get(op, 0)
@@ -171,11 +184,23 @@ def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elap
             op_info_list.append(slimmed_number)
 
         final_op_info.append(op_info_list)
-    final_op_info.append([SEPARATING_LINE] * (len(model_info_list) + 1))
-    final_op_info.append(["Model Size"] + [format_bytes(model_info["model_size"]) for model_info in model_info_list])
+    final_op_info.extend(
+        (
+            [SEPARATING_LINE] * (len(model_info_list) + 1),
+            ["Model Size"]
+            + [
+                format_bytes(model_info["model_size"])
+                for model_info in model_info_list
+            ],
+        )
+    )
     if elapsed_time:
-        final_op_info.append([SEPARATING_LINE] * (len(model_info_list) + 1))
-        final_op_info.append(["Elapsed Time"] + [f"{elapsed_time:.2f} s"])
+        final_op_info.extend(
+            (
+                [SEPARATING_LINE] * (len(model_info_list) + 1),
+                ["Elapsed Time"] + [f"{elapsed_time:.2f} s"],
+            )
+        )
     lines = tabulate(
         final_op_info,
         headers=[],
