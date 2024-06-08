@@ -398,7 +398,7 @@ class SymbolicShapeInference:
                     if self.auto_merge_:
                         self._add_suggested_merge([dim1, dim2], apply=True)
                     else:
-                        logger.warning(f"unsupported broadcast between {str(dim1)} " + str(dim2))
+                        logger.warning(f"unsupported broadcast between {str(dim1)} {str(dim2)}")
             new_shape = [new_dim, *new_shape]
         return new_shape
 
@@ -2986,7 +2986,7 @@ class SymbolicShapeInference:
                                 # note that the broadcasting rule aligns from right to left
                                 # if a tensor has a lower rank (dim_idx[idx] < 0), it would automatically broadcast and need no merge
                                 dim_idx = [len(s) - len(out_shape) + idx for s in shapes]
-                                if len(dim_idx) > 0:
+                                if dim_idx:
                                     self._add_suggested_merge(
                                         [
                                             s[i] if is_literal(s[i]) else str(s[i])

@@ -219,7 +219,7 @@ def find_conv_transpose_nodes(node, opset):
     """X | Conv/ConvTranspose | BatchNormalization."""
     # fmt: on
     match = {}
-    if node.op == "BatchNormalization" and (node.i(0).op == "ConvTranspose" or node.i(0).op == "Conv"):
+    if node.op == "BatchNormalization" and node.i(0).op in ["ConvTranspose","Conv"]:
         conv_transpose_node = node.i(0)
         conv_transpose_node_users = get_node_users(conv_transpose_node)
         if len(conv_transpose_node_users) == 1:
@@ -249,7 +249,7 @@ def find_conv_transpose_nodes(node, opset):
             inputs.append(list(conv_transpose_node.inputs)[0])
             weight_name = list(conv_transpose_node.inputs)[1].name
             if weight_name.endswith("weight"):
-                bias_name = weight_name[:-6] + "bias"
+                bias_name = f"{weight_name[:-6]}bias"
             else:
                 bias_name = weight_name + "_bias"
             inputs.extend(
