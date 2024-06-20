@@ -31,7 +31,6 @@ class TestOnnxModel:
     def test_onnxslim_python_api(self, request, name):
         """Tests the ONNX model slimming Python API using the 'onnxslim' command for a given model name."""
         import onnx
-
         from onnxslim import slim
 
         filename = download_onnx_from_url(f"http://120.224.26.32:15030/aifarm/onnx/{name}.onnx")
