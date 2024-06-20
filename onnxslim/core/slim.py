@@ -1,8 +1,5 @@
-import logging
 import os
-import sys
 import tempfile
-from typing import Dict, List
 
 import numpy as np
 import onnx
@@ -13,11 +10,7 @@ from onnxslim.core.optimizer import delete_node, optimize_model
 from onnxslim.core.symbolic_shape_infer import SymbolicShapeInference
 from onnxslim.onnx_graphsurgeon.ir.tensor import Constant
 from onnxslim.utils import (
-    dump_model_info_to_disk,
-    gen_onnxruntime_input_data,
     logger,
-    onnxruntime_inference,
-    print_model_info_as_table,
 )
 
 DEBUG = bool(os.getenv("ONNXSLIM_DEBUG"))

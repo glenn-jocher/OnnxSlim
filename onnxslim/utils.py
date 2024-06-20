@@ -460,6 +460,7 @@ data_type_sizes = {
 
 
 def calculate_tensor_size(tensor):
+    """Calculate the size of an ONNX tensor in bytes based on its dimensions and data type."""
     shape = tensor.dims
     num_elements = np.prod(shape) if shape else 0
     element_size = data_type_sizes.get(tensor.data_type, 0)
@@ -467,6 +468,7 @@ def calculate_tensor_size(tensor):
 
 
 def get_model_size_and_initializer_size(model):
+    """Calculate and print the total model size and initializer size of an ONNX model in bytes."""
     initializer_size = 0
     for tensor in model.graph.initializer:
         tensor_size = calculate_tensor_size(tensor)
@@ -477,6 +479,7 @@ def get_model_size_and_initializer_size(model):
 
 
 def get_model_subgraph_size(model):
+    """Calculate and print the size of subgraphs in an ONNX model in bytes."""
     graph = model.graph
     for node in graph.node:
         for attr in node.attribute:

@@ -257,7 +257,7 @@ def find_conv_transpose_nodes(node, opset):
             if weight_name.endswith("weight"):
                 bias_name = f"{weight_name[:-6]}bias"
             else:
-                bias_name = weight_name + "_bias"
+                bias_name = f"{weight_name}_bias"
             inputs.extend(
                 (
                     gs.Constant(weight_name, values=conv_w),
@@ -399,7 +399,7 @@ def find_reshape_nodes(node, opset):
                 if isinstance(reshape_node.inputs[1], Constant):
                     input_shape = reshape_node.inputs[0].shape
                     reshape_shape = reshape_node.inputs[1].values
-                    if input_shape != None and np.any(reshape_shape == 0):
+                    if input_shape is not None and np.any(reshape_shape == 0):
                         shape = [
                             input_shape[i] if dim_size == 0 else dim_size for i, dim_size in enumerate(reshape_shape)
                         ]

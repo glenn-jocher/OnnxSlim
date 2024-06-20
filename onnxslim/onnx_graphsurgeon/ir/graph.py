@@ -63,6 +63,7 @@ class Graph(object):
 
             @Graph.register()
             def add(self, a, b):
+        """Registers a function with the Graph class for the specified group of opsets for dynamic access as a member function."""
                 '''Registers a function with the Graph class for the specified group of opsets for dynamic access as a member function.'''
                 return self.layer(op="Add", inputs=[a, b], outputs=["add_out_gs"])
 
@@ -556,6 +557,7 @@ class Graph(object):
                 """Find all nodes used by a given node or function."""
 
                 def get_used_nodes(node):
+                    """Find all nodes that are used as inputs by a given node."""
                     inputs = {}
 
                     def add_local_producers(tensor):
@@ -921,6 +923,7 @@ class Graph(object):
             """Updates the graph's outputs to ensure certain operations remain foldable."""
 
             def is_foldable(node):
+                """Determines if a given node operation is foldable based on its type."""
                 NO_FOLD_OPS = [
                     "QuantizeLinear",
                     "DequantizeLinear",
@@ -1093,7 +1096,9 @@ class Graph(object):
             """Evaluates and partitions the subgraph to infer constant values using ONNX-Runtime."""
 
             def get_out_node_ids():
-                # Gets the final output nodes - producer nodes of graph output tensors without other outputs.
+                """Gets the final output nodes, identifying producer nodes of graph output tensors that lack other
+                outputs.
+                """
                 with subgraph.node_ids():
                     out_node_ids = set()
                     for out in subgraph.outputs:
