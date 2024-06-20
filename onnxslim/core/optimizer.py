@@ -195,7 +195,8 @@ class PadConvMatcher(PatternMatcher):
     def parameter_check(self):
         """Validates if the padding parameter for a convolutional node is a constant."""
         pad_node = self.pad_0
-        return isinstance(pad_node.inputs[1], Constant)
+def parameter_check(self) -> bool:
+    return isinstance(pad_node.inputs[1], Constant)
 
     def rewrite(self):
         """Rewrites the padding parameter for a convolutional node to use a constant if the current parameter is not a
