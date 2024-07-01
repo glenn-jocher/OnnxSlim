@@ -195,6 +195,7 @@ class PadConvMatcher(PatternMatcher):
 
     def parameter_check(self):
         """Validates if the padding parameter for a convolutional node is a constant."""
+        pass
 
 
 def parameter_check(self) -> bool:
