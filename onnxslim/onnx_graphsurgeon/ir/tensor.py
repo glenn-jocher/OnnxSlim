@@ -204,6 +204,7 @@ class Variable(Tensor):
         values: np.ndarray,
         export_dtype: Union[np.dtype, "onnx.TensorProto.DataType"] = None,
     ):
+        """Modify a variable tensor in-place to convert it to a constant tensor with specified values and data type."""
         del self.dtype
         del self.shape
 

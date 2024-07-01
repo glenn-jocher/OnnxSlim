@@ -4,7 +4,6 @@ import onnx
 import pytest
 import torch
 import torch.nn as nn
-
 from onnxslim import register_fusion_pattern, slim
 from onnxslim.core.graph_rewriter import Pattern, PatternGenerator, PatternMatcher
 

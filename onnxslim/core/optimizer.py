@@ -177,6 +177,7 @@ def graph_constant_fold_inplace(graph):
 
 class PadConvMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a PadConvMatcher object with the given pattern matching priority."""
         pattern = Pattern(
             """
             input  input  0 1 pad_0
@@ -194,55 +195,11 @@ class PadConvMatcher(PatternMatcher):
 
     def parameter_check(self):
         """Validates if the padding parameter for a convolutional node is a constant."""
-        pad_node = self.pad_0
 
 
 def parameter_check(self) -> bool:
+    """Returns True if the padding parameter for the convolution node is a constant, else False."""
     return isinstance(pad_node.inputs[1], Constant)
-
-    def rewrite(self):
-        """Rewrites the padding parameter for a convolutional node to use a constant if the current parameter is not a
-        constant.
-        """
-        node = self.conv_0
-        pad_node = self.pad_0
-        input_variable = self.pad_0.inputs[0]
-
-        pad_value = pad_node.inputs[1].values.tolist()
-        input_variable.outputs.remove(pad_node)
-
-        pad_variable = pad_node.outputs[0]  # pad output variable
-        index = node.inputs.index(pad_variable)
-        node.inputs.pop(index)
-        node.inputs.insert(index, input_variable)
-
-        inputs = list(node.inputs)
-        outputs = list(node.outputs)
-        attrs = node.attrs
-
-        node.inputs.clear()
-        node.outputs.clear()
-        pad_node.inputs.clear()
-        pad_node.outputs.clear()
-        conv_pads = attrs["pads"]
-        len_conv_pads = len(conv_pads) // 2
-
-        len_pads = len(pad_value) // 2
-        pads = pad_value[len_pads - len_conv_pads : len_pads] + pad_value[len_pads + len_conv_pads :]
-
-        pads = [pad + conv_pad for pad, conv_pad in zip(pads, conv_pads)]
-        attrs["pads"] = pads
-
-        return {
-            node.name: {
-                "op": "Conv",
-                "inputs": inputs,
-                "outputs": outputs,
-                "name": node.name,
-                "attrs": node.attrs,
-                "domain": None,
-            }
-        }
 
 
 register_fusion_pattern(PadConvMatcher(1))
@@ -250,6 +207,9 @@ register_fusion_pattern(PadConvMatcher(1))
 
 class ConvBatchNormMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a ConvBatchNormMatcher with a priority and a specified pattern for matching Conv-BatchNorm
+        layers.
+        """
         pattern = Pattern(
             """
             input              input  0 1 conv_0
@@ -330,6 +290,7 @@ register_fusion_pattern(ConvBatchNormMatcher(1))
 
 class SlicePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the SlicePatternMatcher with a specific fusion pattern and priority."""
         pattern = Pattern(
             """
             input  input   0 1 slice_0
@@ -432,6 +393,7 @@ register_fusion_pattern(SlicePatternMatcher(1))
 
 class ReshapePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the ReshapePatternMatcher with a specified pattern matching priority."""
         pattern = Pattern(
             """
             input    input   0 1 reshape_0
@@ -500,6 +462,7 @@ register_fusion_pattern(ReshapePatternMatcher(1))
 
 class MatMulAddPatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a MatMulAddPatternMatcher instance with a specified fusion priority setting."""
         pattern = Pattern(
             """
             input    input    0 1 matmul_0
@@ -667,6 +630,7 @@ register_fusion_pattern(MatMulAddPatternMatcher(1))
 
 class GeluPatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a GeluPatternMatcher instance with a specific priority and predefined fusion patterns."""
         pattern = Pattern(
             """
             input  input  0 2 mul_0 div_0
@@ -712,6 +676,7 @@ class GeluPatternMatcher(PatternMatcher):
 
 class ReducePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the ReducePatternMatcher with a specific fusion pattern and priority level."""
         pattern = Pattern(
             """
             input     input       0 1 reduce_0
@@ -773,6 +738,7 @@ def replace_custom_layer(
     attrs: dict = None,
     domain: str = "ai.onnx.contrib",
 ):
+    """Replace custom layers in the graph with specified operator, inputs, outputs, attributes, and domain."""
     return self.layer(
         op=op,
         inputs=inputs,
@@ -884,6 +850,7 @@ def subexpression_elimination(graph):
 
 
 def optimize_model(model: Union[onnx.ModelProto, gs.Graph], skip_fusion_patterns: str = None) -> onnx.ModelProto:
+    """Optimize and fuse layers of an ONNX model to improve computational efficiency."""
     graph = model if isinstance(model, gs.Graph) else gs.import_onnx(model)
     fusion_patterns = get_fusion_patterns(skip_fusion_patterns)
     fusion_pairs = find_matches(graph, fusion_patterns)

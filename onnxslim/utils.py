@@ -53,6 +53,7 @@ def init_logging(verbose=False):
 
 
 def format_bytes(size: Union[int, Tuple[int, ...]]) -> str:
+    """Format byte sizes into human-readable strings with appropriate units (B, KB, MB, GB)."""
     if isinstance(size, int):
         size = (size,)
 
@@ -75,6 +76,7 @@ def format_bytes(size: Union[int, Tuple[int, ...]]) -> str:
 
 
 def onnx_dtype_to_numpy(onnx_dtype: int) -> np.dtype:
+    """Maps an ONNX dtype to its corresponding NumPy dtype."""
     import onnx.mapping as mapping
 
     return np.dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_dtype])
@@ -83,6 +85,7 @@ def onnx_dtype_to_numpy(onnx_dtype: int) -> np.dtype:
 def gen_onnxruntime_input_data(
     model: onnx.ModelProto, model_check_inputs: Optional[List[str]] = None
 ) -> Dict[str, np.ndarray]:
+    """Generate random input data for an ONNX model considering potential specific input shapes and types."""
     input_info = {}
     for input_tensor in model.graph.input:
         name = input_tensor.name
@@ -136,6 +139,7 @@ def gen_onnxruntime_input_data(
 
 
 def onnxruntime_inference(model: onnx.ModelProto, input_data: dict) -> Dict[str, np.array]:
+    """Perform inference using ONNX Runtime on the given model and input data."""
     import os
     import tempfile
 
@@ -299,6 +303,7 @@ def dump_model_info_to_disk(model_name: str, model_info: Dict):
 
 
 def get_opset(model: onnx.ModelProto) -> int:
+    """Returns the ONNX opset version for a given model."""
     try:
         for importer in model.opset_import:
             if importer.domain in {"", "ai.onnx"}:
@@ -310,6 +315,7 @@ def get_opset(model: onnx.ModelProto) -> int:
 
 
 def summarize_model(model: onnx.ModelProto) -> Dict:
+    """Generates a summary of the ONNX model, including model size, op types, and tensor shapes."""
     logger.debug("Start summarizing model.")
     model_info = {}
 
@@ -409,6 +415,7 @@ def check_point(model: onnx.ModelProto):
 
 
 def is_converged(model: onnx.ModelProto, graph_ckpt, iter: int) -> bool:
+    """Checks if the model's graph has converged to a stable state across iterations."""
     logger.debug(f"optimization iter: {iter}")
     graph = gs.import_onnx(model)
     if graph == graph_ckpt:
