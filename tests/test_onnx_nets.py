@@ -25,7 +25,7 @@ class TestTorchVisionClass:
         ),
     )
     def test_torchvision(self, request, model, shape=(1, 3, 224, 224)):
-        """Test various TorchVision models with random input tensors of a specified shape."""
+        """Test various TorchVision models by exporting them to ONNX format and then slimming the exported models."""
         model = model(pretrained=PRETRAINED)
         x = torch.rand(shape)
         directory = f"tmp/{request.node.name}"
@@ -49,11 +49,11 @@ class TestTorchVisionClass:
 class TestTimmClass:
     @pytest.fixture(params=timm.list_models())
     def model_name(self, request):
-        """Yields names of models available in TIMM (https://github.com/rwightman/pytorch-image-models) for pytest fixture parameterization."""
+        """Yields TIMM model names for pytest parameterization (https://github.com/rwightman/pytorch-image-models)."""
         yield request.param
 
     def test_timm(self, request, model_name):
-        """Tests a TIMM model's forward pass with a random input tensor of the appropriate size."""
+        """Tests TIMM models' forward pass with random inputs and verifies ONNX export using onnx-slim."""
         model = timm.create_model(model_name, pretrained=PRETRAINED)
         input_size = model.default_cfg.get("input_size")
         x = torch.randn((1,) + input_size)

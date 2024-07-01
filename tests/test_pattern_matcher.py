@@ -3,13 +3,12 @@ import os
 import pytest
 import torch
 import torch.nn as nn
-
 from onnxslim import slim
 
 
 class TestPatternMatcher:
     def test_gelu(self, request):
-        """Test the GELU activation function in a neural network model using an instance of nn.Module."""
+        """Tests the GELU activation in a model, exporting it to an ONNX file for verification."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -38,7 +37,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_pad_conv(self, request):
-        """Test padding followed by 2D convolution within a neural network module."""
+        """Tests padding and 2D convolution layers in a neural network model using nn.Module."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -70,7 +69,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_conv_bn(self, request):
-        """Test the convolutional layer followed by batch normalization export and re-import via ONNX."""
+        """Tests convolution followed by batch normalization in a model, exporting and re-importing it via ONNX."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -95,9 +94,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_consecutive_slice(self, request):
-        """Tests consecutive slicing operations on a model by exporting it to ONNX format and then slimming the ONNX
-        file.
-        """
+        """Exports and tests consecutive slicing operations in a model using ONNX and slimming."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -120,7 +117,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_consecutive_reshape(self, request):
-        """Test the functionality of consecutive reshape operations in a model and export it to ONNX format."""
+        """Tests consecutive tensor reshape operations in a model and exports it to ONNX format."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -141,7 +138,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_matmul_add(self, request):
-        """Tests matrix multiplication followed by an addition operation within a neural network model."""
+        """Tests matrix multiplication with addition operation and exports the model to ONNX format."""
 
         class Model(nn.Module):
             def __init__(self):
@@ -165,9 +162,7 @@ class TestPatternMatcher:
         slim(filename, filename)
 
     def test_reduce(self, request):
-        """Tests model reduction by exporting a PyTorch model to ONNX format, slimming it, and saving to a specified
-        directory.
-        """
+        """Tests model reduction by exporting it to ONNX, slimming the file, and saving to a specified directory."""
 
         class Model(nn.Module):
             def __init__(self):

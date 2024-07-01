@@ -25,6 +25,7 @@ class PatternMapping(dict):
     """Represents a graph pattern mapping result."""
 
     def __init__(self, onnx_node=None) -> None:
+        """Initializes a PatternMapping instance with associated ONNX node inputs and outputs."""
         super().__init__()
         self.onnx_node = onnx_node
 
@@ -37,7 +38,7 @@ class PatternMapping(dict):
         self.constants = {}  # constant name -> onnx tensor mapping
 
     def set_input_onnx_tensor(self, onnx_tensor, index):
-        """Sets an ONNX tensor at a specified index of the input list, extending the list if necessary."""
+        """Sets an ONNX tensor at a specified index in the input list, extending the list if necessary."""
         length = len(self.inputs)
         for _ in range(index - length + 1):
             self.inputs.append(None)
@@ -47,7 +48,7 @@ class PatternMapping(dict):
         return True
 
     def set_output_onnx_tensor(self, onnx_tensor, index):
-        """Sets the output ONNX tensor at the given index within the outputs list."""
+        """Sets an ONNX tensor at the specified output index, extending the outputs list if necessary."""
         length = len(self.outputs)
         for _ in range(index - length + 1):
             self.outputs.append(None)
@@ -57,29 +58,22 @@ class PatternMapping(dict):
         return True
 
     def set_constant_onnx_tensor(self, onnx_tensor, name):
-        """Set an ONNX tensor as a constant if it hasn't already been set with a different name."""
+        """Sets an ONNX tensor as a constant, ensuring it adheres to its assigned name."""
         if name in self.constants and self.constants[name].name != onnx_tensor.name:
             return False
         self.constants[name] = onnx_tensor
         return True
 
     def _get_node(self):
-        """Return the ONNX node associated with the current instance."""
+        """Return the ONNX node associated with the current PatternMapping instance."""
         return self.onnx_node
 
     def get(self, name: str):
-        """
-        Retrieve a pattern-to-graph mapping given the pattern node name.
-
-        Args:
-            name (str): The name of the pattern node. The pattern node can be a single op node or a subpattern.
-
-        Returns:
-            PatternMapping for a subpattern node or gs.Node for a single op node.
-        """
+        """Retrieve pattern-to-graph mapping for a specified pattern node name."""
         return self[name].onnx_node if self[name].onnx_node is not None else self[name]
 
     def __str__(self) -> str:
+        """Return a string representation of the pattern mapping, including inputs, outputs, and constants."""
         if self.onnx_node is None:
             return "{" + str.join(", ", [f"{key}: {str(value)}" for key, value in self.items()]) + "}"
         return self.onnx_node.name
@@ -98,6 +92,7 @@ class GraphPattern:
     """
 
     def __init__(self) -> None:
+        """Initializes a GraphPattern with optional node and tensor mappings."""
         self.op = None  # op (str)
         self.check_func = None  # callback function for single node
         # pattern node name -> GraphPattern nodes(single or subpattern)
@@ -115,6 +110,7 @@ class GraphPattern:
         self.constant_tensors: Dict[int, str] = {}
 
     def _add_tensor(self, input_node=None) -> int:
+        """Assigns a unique tensor ID, tracks its input/output nodes, and updates the tensor count."""
         tensor_id = self.num_tensors
         self.tensor_inputs[tensor_id] = []
         if input_node is not None:
@@ -125,26 +121,13 @@ class GraphPattern:
         return tensor_id
 
     def variable(self) -> int:
-        """
-        Add a variable tensor without a input node - This tensor will be an input tensor of this graph pattern.
-
-        Return:
-            int: the tensor id.
-        """
+        """Adds a variable tensor to the graph pattern and returns its tensor ID."""
         tensor_id = self._add_tensor()
         self.input_tensors.append(tensor_id)
         return tensor_id
 
     def constant(self, name=None) -> int:
-        """
-        Add a constant tensor. If name is not provided, a default name will be assigned.
-
-        Args:
-            name(str): the constant tensor name
-
-        Return:
-            int: the tensor id.
-        """
+        """Adds a constant tensor to the graph pattern, optionally assigning a specific name."""
         tensor_id = self._add_tensor()
         if name is None:
             name = f"unnamed_constant_tensor_{tensor_id}"
@@ -152,11 +135,13 @@ class GraphPattern:
         return tensor_id
 
     def set_output_tensors(self, output_tensors) -> None:
+        """Sets the graph pattern's output tensors based on provided tensor IDs."""
         for tensor_id in output_tensors:
             assert tensor_id in self.tensor_inputs
         self.output_tensors = output_tensors
 
     def _init_single_node(self, op, check_func=None) -> None:
+        """Initialize attributes for a single operation node and optionally set a validation function."""
         self.op = op
         self.check_func = check_func
 
@@ -168,19 +153,7 @@ class GraphPattern:
         inputs=None,
         num_output_tensors=1,
     ):
-        """
-        Add an op node or a subpattern node to the current pattern.
-
-        Args:
-            name (str): the node name.
-            op (Union[GraphPattern, str]): the GraphPattern instance if adding a subpattern node or the op name if adding a single op node.
-            check_func (function): the callback function for additional matching rules of an op node if adding a single op node.
-            inputs (list): the list of input tensors. If this node is a sub-pattern, the sequence of this list should align with the sequence of the sub-pattern's input tensors.
-            num_output_tensors (int): number of output tensors
-
-        Return:
-            tuple(int) or int or None: output tensors.
-        """
+        """Adds an op node or sub-pattern node to the graph pattern with input and output tensor configurations."""
         assert self.op is None
         assert name not in self.nodes
 
@@ -210,7 +183,7 @@ class GraphPattern:
         return tuple(self.node_outputs[name])
 
     def _get_inbound(self, tensor_index):
-        """Retrieve the tensor id and first inbound node for a given tensor index."""
+        """Retrieve the tensor id and first inbound node for a given input tensor index."""
         if len(self.input_tensors) > tensor_index:
             tensor_id = self.input_tensors[tensor_index]
             if len(self.tensor_outputs[tensor_id]):
@@ -228,6 +201,7 @@ class GraphPattern:
         return None, None
 
     def _single_node_match(self, onnx_node: Node) -> bool:
+        """Match the ONNX node with the pattern's single-node op and check conditions."""
         assert self.op is not None
         with G_LOGGER.indent():
             if self.op != onnx_node.op:
@@ -244,14 +218,14 @@ class GraphPattern:
         return True
 
     def _get_tensor_index_for_node(self, node: str, tensor_id: int, is_node_input: bool):
-        """Returns the index of a tensor for a given node, based on whether it is an input or output tensor."""
+        """Determine the tensor index for a given node and tensor ID, specifying whether it's an input or output."""
         if is_node_input:
             return self.node_inputs[node].index(tensor_id)
         else:
             return self.node_outputs[node].index(tensor_id)
 
     def get_inbound_or_outbound_onnx_node(self, mapping: PatternMapping, is_inbound: bool, tensor_index: int):
-        """Gets the ONNX node based on whether it's inbound or outbound for a specified tensor index and mapping."""
+        """Gets the ONNX node for inbound or outbound connections based on a specified tensor index and mapping."""
         if self.op is not None:
             return mapping._get_node()
         if is_inbound:
@@ -282,6 +256,7 @@ class GraphPattern:
         mapped_onnx_nodes: set,
         onnx_graph_output_tensors: set,
     ):
+        """Matches an ONNX node and its subgraph to the current graph pattern."""
         if onnx_node.id in mapped_onnx_nodes:
             return None
         if self.op is not None:  # is single node
@@ -320,6 +295,7 @@ class GraphPattern:
         onnx_graph_output_tensors: set,
         from_inbound: bool,
     ) -> bool:
+        """Matches ONNX nodes to the graph pattern and performs depth-first search for node and subgraph matching."""
         with G_LOGGER.indent():
             G_LOGGER.info("Checking node: {:} against pattern node: {:}.".format(onnx_node.name, node_name))
         tensor_index_for_node = self._get_tensor_index_for_node(node_name, from_tensor, is_node_input=from_inbound)
@@ -432,15 +408,7 @@ class GraphPattern:
         return True
 
     def match_all(self, graph: Graph) -> List[PatternMapping]:
-        """
-        Find all the matched instances of subgraph with the current pattern in the given graph.
-
-        Args:
-            graph (Graph): the graph to match.
-
-        Return:
-            List[PatternMapping]: list of mappings.
-        """
+        """Find all instances of the pattern in the provided ONNX graph and return their mappings."""
         mappings = []
         onnx_graph_output_tensors = {tensor.name for tensor in graph.outputs}
         with graph.node_ids():

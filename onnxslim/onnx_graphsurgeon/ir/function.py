@@ -52,23 +52,7 @@ class Function(Graph):
         functions: "Sequence[Function]" = None,
         attrs: dict = None,
     ):
-        """
-        Args:
-            name (str): The name of the function.
-            domain (str): The domain/namespace of this function.
-            nodes (Sequence[Node]): A list of the nodes in this function.
-            inputs (Sequence[Tensor]): A list of graph input Tensors.
-            outputs (Sequence[Tensor]): A list of graph output Tensors.
-            doc_string (str): A doc_string for the function. Defaults to "".
-            opset (int): The ONNX opset used by nodes in this function.
-            import_domains (Sequence[onnx.OperatorSetIdProto]): The list of domains used by nodes in this function.
-            functions (Sequence[Function]): The list of functions in this model.
-            attrs (dict): A mapping of attribute names to their default values.
-                Nodes within this function can have attributes which take on the values of the Function attributes.
-                When a Function is instantiated into a Node, providing attributes to that Node will override the Function's
-                default attribute values. A default value of `None` means that the instantiated Node must provide the value
-                of that attribute (in other words, it is a required attribute).
-        """
+        """Initializes the Function instance with specified name, domain, nodes, and attributes for ONNX models."""
         self.domain = misc.default_value(domain, Function.DEFAULT_DOMAIN)
         self.attrs = misc.default_value(attrs, {})
 
@@ -89,7 +73,7 @@ class Function(Graph):
 
     @property
     def unique_id(self):
-        """Returns a tuple which uniquely identifies this function."""
+        """Returns a tuple uniquely identifying this function."""
         return (self.domain, self.name)
 
     def cleanup(
@@ -99,9 +83,7 @@ class Function(Graph):
         remove_unused_graph_inputs=False,
         recurse_functions=False,
     ):
-        """See Graph.cleanup() The only difference is that 'recurse_functions' defaults to False, so that only this
-        Function is cleaned up.
-        """
+        """Cleans up the function graph, removing unused nodes and tensors. See http://www.apache.org/licenses/LICENSE-2.0"""
         if recurse_functions:
             G_LOGGER.warning(
                 "Function.cleanup() called with recurse_functions=True, meaning that other functions will also be cleaned up."
@@ -114,9 +96,7 @@ class Function(Graph):
         )
 
     def fold_constants(self, recurse_functions=False, **kwargs):
-        """See Graph.fold_constants() The only difference is that 'recurse_functions' defaults to False, so that only
-        this Function's constants are folded.
-        """
+        """Fold constants in the Function's graph; optionally recurse into nested functions."""
         if recurse_functions:
             G_LOGGER.warning(
                 "Function.fold_constants() called with recurse_functions=True, meaning that other functions will also be const-folded."
@@ -129,9 +109,7 @@ class Function(Graph):
         recurse_functions=False,
         mode="nodes",
     ):
-        """See Graph.toposort() The only difference is that 'recurse_functions' defaults to False and mode defaults to
-        "nodes", so that by default only this function's nodes will be sorted.
-        """
+        """Perform topological sorting of function nodes, defaulting to not sorting other functions."""
         if recurse_functions:
             G_LOGGER.warning(
                 "Function.toposort() called with recurse_functions=True, meaning that other functions will be sorted."
@@ -143,24 +121,7 @@ class Function(Graph):
         )
 
     def __call__(self, graph, inputs=None, outputs=None, *args, **kwargs) -> List[Tensor]:
-        """
-        Creates a Node which is an instance of this function. The created node can be used in a Graph or another
-        Function.
-
-        The provided inputs are processed the same way as in Graph.layer().
-        If outputs are not provided, they are created based on the Function's outputs.
-
-        Args:
-            graph (Union[Graph, Function]): The Graph of Function to add the new node to.
-            inputs (List[Union[Tensor, str, numpy.ndarray]]): The list of inputs.
-            outputs (List[Union[Tensor, str, numpy.ndarray]]): The list of outputs.
-            attrs (Dict[str, Any]): A list of attributes for the node.
-                The attribute names should be a subset of this Function's attribute names.
-            args/kwargs: These are passed directly to the constructor of Node.
-
-        Returns:
-            List[Tensor]: The output tensors of the node.
-        """
+        """Instantiates this Function as a Node within a graph, processing inputs and outputs accordingly."""
         if inputs is not None and len(inputs) != len(self.inputs):
             msg_template = "Function {} expects {} inputs, but was called with {} inputs."
             G_LOGGER.warning(msg_template.format(self.name, len(self.inputs), len(inputs)))
@@ -202,16 +163,7 @@ class Function(Graph):
         return outputs
 
     def copy(self):
-        """
-        Copy the function.
-
-        This makes copies of all nodes and tensors in the function, but will not
-        do a deep-copy of weights or attributes (with the exception of ``Graph``
-        attributes, which will be copied using their ``copy`` method).
-
-        Returns:
-            Function: A copy of the function.
-        """
+        """Creates a deep copy of the function, including nodes and tensors but not weights or non-Graph attributes."""
 
         local_tensor_copies = {n: t.copy() for n, t in self.tensors().items()}
 
@@ -247,7 +199,7 @@ class Function(Graph):
         )
 
     def __eq__(self, other: "Function"):
-        """Checks equality of self with another Function object based on their attributes."""
+        """Determine equality based on function attributes and unique identifiers."""
 
         def sequences_equal(seq1, seq2):
             """Checks if two sequences are equal in length and elements."""
@@ -263,9 +215,7 @@ class Function(Graph):
         )
 
     def __str__(self):
-        """Returns a string representation of the function including its name, domain, opset, inputs, nodes, and
-        outputs.
-        """
+        """Returns a string representation of the function with its name, domain, opset, inputs, nodes, and outputs."""
         nodes_str = "\n".join([str(node) for node in self.nodes])
         out = f"Function {self.name}, Domain {self.domain}, Opset {self.opset}"
         out += f"\nInputs: {self.inputs}"

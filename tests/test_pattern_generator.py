@@ -4,14 +4,13 @@ import onnx
 import pytest
 import torch
 import torch.nn as nn
-
 from onnxslim import register_fusion_pattern, slim
 from onnxslim.core.graph_rewriter import Pattern, PatternGenerator, PatternMatcher
 
 
 class TestPatternGenerator:
     def test_gelu(self, request):
-        """Test the GELU activation function within the PatternModel class."""
+        """Validates the GELU activation function integration within the PatternModel class and its ONNX export."""
 
         class PatternModel(nn.Module):
             def __init__(self):

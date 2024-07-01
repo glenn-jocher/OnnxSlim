@@ -19,7 +19,7 @@ from utils import download_onnx_from_url
 )
 class TestOnnxModel:
     def test_onnx_model(self, request, name):
-        """Test downloading an ONNX model by its name and running 'onnxslim' command to slim the model."""
+        """Tests downloading an ONNX model, slimming it using 'onnxslim' command, and outputs the result."""
         filename = download_onnx_from_url(f"http://120.224.26.32:15030/aifarm/onnx/{name}.onnx")
         command = f"onnxslim {filename} {name}_slim.onnx"
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -29,9 +29,8 @@ class TestOnnxModel:
         assert result.returncode == 0
 
     def test_onnxslim_python_api(self, request, name):
-        """Tests the ONNX model slimming Python API using the 'onnxslim' command for a given model name."""
+        """Tests the ONNX model slimming Python API using 'onnxslim' for a given model name."""
         import onnx
-
         from onnxslim import slim
 
         filename = download_onnx_from_url(f"http://120.224.26.32:15030/aifarm/onnx/{name}.onnx")
@@ -41,7 +40,7 @@ class TestOnnxModel:
 
 class TestFeat:
     def test_input_shape_modification(self, request):
-        """Test the modification of input shapes for a UNet model and assert the expected return code."""
+        """Tests input shape modifications for a UNet model using ONNXSlim and asserts the expected return code."""
         filename = download_onnx_from_url("http://120.224.26.32:15030/aifarm/onnx/UNetModel-fp16.onnx")
         command = f"onnxslim {filename} UNetModel-fp16_slim.onnx --input_shapes cc:1,1,768"
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -51,7 +50,7 @@ class TestFeat:
         assert result.returncode == 0
 
     def test_fp162fp32_conversion(self, request):
-        """Test the conversion of an ONNX model from FP16 to FP32 precision."""
+        """Test the conversion of a UNet ONNX model from FP16 to FP32 and verify success."""
         filename = download_onnx_from_url("http://120.224.26.32:15030/aifarm/onnx/UNetModel-fp16.onnx")
         command = f"onnxslim {filename} UNetModel-fp16_slim.onnx --input_shapes cc:1,1,768 --dtype fp32"
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -61,9 +60,7 @@ class TestFeat:
         assert result.returncode == 0
 
     def test_output_modification(self, request):
-        """Tests output modification of an ONNX model by running a slimming command and checking for successful
-        execution.
-        """
+        """Tests ONNX model output modification by slimming and verifying successful command execution."""
         filename = download_onnx_from_url("http://120.224.26.32:15030/aifarm/onnx/yolov5m.onnx")
         command = f"onnxslim {filename} yolov5m_slim.onnx --outputs 591 739 443"
         result = subprocess.run(command, shell=True, capture_output=True, text=True)

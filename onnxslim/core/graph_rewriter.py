@@ -7,7 +7,7 @@ from onnxslim.utils import logger
 
 
 def get_node_users(node):
-    """Retrieve the list of nodes that use the outputs of the given node."""
+    """Retrieve list of nodes utilizing the outputs from the specified node."""
     users = []
     for output in node.outputs:  # output is a Variable
         if len(output.outputs) == 0:
@@ -17,7 +17,7 @@ def get_node_users(node):
 
 
 def get_node_feeds(node):
-    """Retrieve the list of nodes that provide inputs to the given node."""
+    """Retrieve the list of nodes that supply inputs to the specified node."""
     feeds = []
     for input in node.inputs:
         if len(input.inputs) == 0 and not isinstance(input, Constant):
@@ -30,9 +30,7 @@ def get_node_feeds(node):
 
 
 def get_name(name):
-    """Sanitizes the input string by replacing illegal characters with underscores and prefixing with an underscore if
-    numeric.
-    """
+    """Sanitize the input string by replacing illegal characters with underscores and prefixing numerics."""
     _illegal_char_regex = re.compile("[^0-9a-zA-Z_]+")
     sanitized_name = _illegal_char_regex.sub("_", name)
     if sanitized_name.isdigit():
@@ -43,7 +41,7 @@ def get_name(name):
 
 class NodeDescriptor:
     def __init__(self, node_spec):
-        """Initialize NodeDescriptor with node_spec list requiring at least 4 elements."""
+        """Initialize a NodeDescriptor with a given node_spec list requiring at least 4 elements."""
         if not isinstance(node_spec, list):
             raise ValueError("node_spec must be a list")
         if len(node_spec) < 4:
@@ -72,13 +70,11 @@ class NodeDescriptor:
         assert len(self.output_names) == self.output_num, f"{self.name} {len(self.output_names)} != {self.output_num}"
 
     def __repr__(self):
-        """Return a string representation of the object, including its name, operation type, input/output counts, and
-        input/output names.
-        """
+        """Provide a string representation of the NodeDescriptor, detailing its name, operation, and I/O counts."""
         return f"name: {self.name}, type: {self.op}, input_num: {self.input_num}, output_num: {self.output_num}, input_names: {self.input_names}, output_names: {self.output_names}"
 
     def __dict__(self):
-        """Returns a dictionary representation of the object, with 'name' as the key."""
+        """Converts the NodeDescriptor instance to a dictionary with 'name' as the key."""
         return {
             "name": self,
         }
@@ -86,19 +82,19 @@ class NodeDescriptor:
 
 class Pattern:
     def __init__(self, pattern):
-        """Initialize the Pattern class with a given pattern and parse its nodes."""
+        """Initialize the Pattern class with a provided pattern and parse its nodes."""
         self.pattern = pattern
         self.nodes = self.parse_nodes()
 
     def parse_nodes(self):
-        """Parse pattern into a list of NodeDescriptor objects from non-empty, stripped, and split lines."""
+        """Parse pattern into NodeDescriptor objects from non-empty, stripped, and split lines."""
         nodes = self.pattern.split("\n")
         nodes = [line.strip().split() for line in nodes if line]
         nodes = [NodeDescriptor(node) for node in nodes if node]
         return nodes
 
     def match(self, node):
-        """Match a node against a precompiled pattern."""
+        """Matches a node against a predefined pattern to check for structural alignment."""
         return self.pattern.match(node)
 
     def __repr__(self):
@@ -108,22 +104,18 @@ class Pattern:
 
 class PatternMatcher:
     def __init__(self, pattern, priority):
-        """Initialize the PatternMatcher with a given pattern and priority, and prepare node references and output
-        names.
-        """
+        """Initialize PatternMatcher with a pattern, priority, and prepare node references and output names."""
         self.pattern = pattern
         self.priority = priority
         self.pattern_dict = {node.name: node for node in pattern.nodes}
         self.output_names = [node.name for node in pattern.nodes if node.op == "output"]
 
     def get_match_point(self):
-        """Retrieve the match point node from the pattern dictionary based on output node input names."""
+        """Identify the match point node from the pattern dict using output node input names."""
         return self.pattern_dict[self.pattern_dict[self.output_names[0]].input_names[0]]
 
     def match(self, node):
-        """Match a given node to a pattern by comparing input names with the match point node from the pattern
-        dictionary.
-        """
+        """Match a given node to a pattern using a recursive comparison of input and operation names."""
         match_point = self.get_match_point()
 
         def match_(node, pattern_node):
@@ -175,22 +167,22 @@ class PatternMatcher:
 
     @abstractmethod
     def rewrite(self):
-        """Abstract method to rewrite the graph based on matched patterns, to be implemented by subclasses."""
+        """Rewrites the graph based on matched patterns; implemented by subclasses for specific rewrite logic."""
         raise NotImplementedError("rewrite method must be implemented")
 
     def parameter_check(self):
-        """Check and validate parameters, returning True if valid."""
+        """Check and validate parameters in the matched pattern, returning True if all parameters are valid."""
         return True
 
 
 class PatternGenerator:
     def __init__(self, onnx_model):
-        """Initialize the PatternGenerator class with an ONNX model and process its graph."""
+        """Initialize the PatternGenerator with an ONNX model and process its computational graph."""
         self.graph = gs.import_onnx(onnx_model)
         self.graph.fold_constants().cleanup().toposort()
 
     def generate(self):
-        """Generate the inputs, outputs, and nodes from the graph of the initialized ONNX model."""
+        """Generates inputs, outputs, and nodes templates from the ONNX model graph."""
         inputs = self.graph.inputs
         outputs = self.graph.outputs
         nodes = self.graph.nodes

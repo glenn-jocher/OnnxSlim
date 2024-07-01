@@ -27,36 +27,36 @@ from onnxslim.onnx_graphsurgeon.util.exception import OnnxGraphSurgeonException
 # Context manager to apply indentation to messages
 class LoggerIndent(object):
     def __init__(self, logger, indent):
-        """Initialize the LoggerIndent context manager with the specified logger and indentation level."""
+        """Initialize LoggerIndent with a logger instance and a specified indentation level for log messages."""
         self.logger = logger
         self.old_indent = self.logger.logging_indent
         self.indent = indent
 
     def __enter__(self):
-        """Set logger indentation level on entering the context."""
+        """Sets the logger's indentation level when entering the context."""
         self.logger.logging_indent = self.indent
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Reset logger indentation level on exiting the context."""
+        """Resets logger indentation level upon exiting the context."""
         self.logger.logging_indent = self.old_indent
 
 
 # Context manager to suppress messages
 class LoggerSuppress(object):
     def __init__(self, logger, severity):
-        """Initialize a LoggerSuppress object with a logger and severity level."""
+        """Suppress logger messages below a specified severity level for the context duration."""
         self.logger = logger
         self.old_severity = self.logger.severity
         self.severity = severity
 
     def __enter__(self):
-        """Set logger severity to a specified level when entering the context."""
+        """Set logger severity to the specified level on entering the context."""
         self.logger.severity = self.severity
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Reset logger severity to its original level when exiting the context."""
+        """Revert the logger severity to its original level when exiting the context."""
         self.logger.severity = self.old_severity
 
 
@@ -95,16 +95,7 @@ class Logger(object):
     }
 
     def __init__(self, severity=INFO, colors=True, letter=True, timestamp=False, line_info=False):
-        """
-        Logger.
-
-        Args:
-            severity (Logger.Severity): Messages below this severity are ignored.
-            colors (bool): Whether to use colored output.
-            letter (bool): Whether to prepend each logging message with a letter indicating it's severity. Defaults to True.
-            timestamp (bool): Whether to include a timestamp in the logging output. Defaults to False.
-            line_info (bool): Whether to include file and line number information in the logging output. Defaults to False.
-        """
+        """Initialize the Logger with configurable severity, colors, letter, timestamp, and line info options."""
         self._severity = severity
         self.logging_indent = 0
         self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -117,46 +108,33 @@ class Logger(object):
 
     @property
     def severity(self):
-        """Returns the logging severity level."""
+        """Returns the current logging severity level."""
         return self._severity
 
     @severity.setter
     def severity(self, value):
-        """Returns or sets the logging severity level with callback updates."""
+        """Get or set the current logging severity level."""
         self._severity = value
         for callback in self.logger_callbacks:
             callback(self._severity)
 
     def register_callback(self, callback):
-        """
-        Registers a callback with the logger, which will be invoked when the logging severity is modified. The callback
-        is guaranteed to be called at least once in the register_callback function.
-
-        Args:
-            callback (Callable(Logger.Severity)): A callback that accepts the current logger severity.
-        """
+        """Registers a callback to be invoked when the logging severity is modified."""
         callback(self._severity)
         self.logger_callbacks.append(callback)
 
     def indent(self, level=1):
-        """Returns a context manager that indents all strings logged by the specified amount."""
+        """Returns a context manager to indent log messages by the specified level."""
         return LoggerIndent(self, level + self.logging_indent)
 
     def suppress(self, severity=CRITICAL):
-        """
-        Returns a context manager that temporarily changes the severity of the logger for its duration.
-
-        Args:
-            severity (Logger.Severity): The severity to set the logger to. Defaults to Logger.CRITICAL, which will suppress all messages.
-        """
+        """Temporarily changes logger severity, suppressing messages below the given severity level."""
         return LoggerSuppress(self, severity)
 
     # If once is True, the logger will only log this message a single time. Useful in loops.
     # message may be a callable which returns a message. This way, only if the message needs to be logged is it ever generated.
     def log(self, message, severity, mode=LogMode.EACH, stack_depth=2):
-        """Logs a message with a specified severity and mode, supporting both single and repeated logging based on
-        conditions.
-        """
+        """Logs a message with a specific severity and mode, supporting conditional repeated logging."""
 
         def process_message(message, stack_depth):
             """Generates a log message prefix with file name and line number based on the specified stack depth."""
@@ -225,15 +203,15 @@ class Logger(object):
         print(process_message(message, stack_depth=stack_depth))
 
     def ultra_verbose(self, message, mode=LogMode.EACH):
-        """Logs an ultra-verbose message with a specified mode and stack depth of 3."""
+        """Logs an ultra-verbose message with a specified mode and enhanced stack depth."""
         self.log(message, Logger.ULTRA_VERBOSE, mode=mode, stack_depth=3)
 
     def verbose(self, message, mode=LogMode.EACH):
-        """Logs a verbose message with a specified mode and stack depth of 3."""
+        """Logs a verbose message with an optional logging mode and stack depth of 3."""
         self.log(message, Logger.VERBOSE, mode=mode, stack_depth=3)
 
     def debug(self, message, mode=LogMode.EACH):
-        """Logs a debug message with a specified mode and stack depth of 3."""
+        """Logs a debug message with the specified mode and a stack depth of 3."""
         self.log(message, Logger.DEBUG, mode=mode, stack_depth=3)
 
     def info(self, message, mode=LogMode.EACH):
@@ -241,7 +219,7 @@ class Logger(object):
         self.log(message, Logger.INFO, mode=mode, stack_depth=3)
 
     def warning(self, message, mode=LogMode.EACH):
-        """Logs a warning message with a specified mode and stack depth of 3."""
+        """Logs a warning message with specified mode and stack depth of 3."""
         self.log(message, Logger.WARNING, mode=mode, stack_depth=3)
 
     def error(self, message, mode=LogMode.EACH):
@@ -250,7 +228,7 @@ class Logger(object):
 
     # Like error, but immediately exits.
     def critical(self, message):
-        """Logs a critical message with a stack depth of 3 and raises an OnnxGraphSurgeonException."""
+        """Logs a critical message then raises an OnnxGraphSurgeonException with detailed context."""
         self.log(message, Logger.CRITICAL, stack_depth=3)
         raise OnnxGraphSurgeonException(message) from None  # Erase exception chain
 

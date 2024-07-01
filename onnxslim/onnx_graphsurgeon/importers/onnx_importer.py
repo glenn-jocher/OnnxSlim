@@ -54,6 +54,7 @@ ONNX_PYTHON_ATTR_MAPPING = {
 
 
 def get_onnx_tensor_shape(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProto]) -> List[int]:
+    """Returns the shape of an ONNX tensor as a list of dimensions."""
     shape = None
     if isinstance(onnx_tensor, (onnx.TensorProto, onnx.SparseTensorProto)):
         shape = onnx_tensor.dims
@@ -70,12 +71,12 @@ def get_onnx_tensor_shape(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorPro
 
 
 def get_dtype_name(onnx_type):
-    """Get the ONNX data type name from its integer representation."""
+    """Retrieve the ONNX data type name given its integer representation."""
     return {val: key for key, val in onnx.TensorProto.DataType.items()}[onnx_type]
 
 
 def get_itemsize(dtype):
-    """Return the byte size of an element for a given ONNX data type."""
+    """Return the byte size of an element for a given ONNX data type using NumPy."""
     np_dtype = get_numpy_type(dtype)
     if np_dtype is not None:
         return np.dtype(np_dtype).itemsize
@@ -94,7 +95,7 @@ def get_itemsize(dtype):
 
 
 def get_numpy_type(onnx_type):
-    """Convert an ONNX tensor type to a corresponding NumPy type, if supported."""
+    """Converts an ONNX tensor type to the corresponding NumPy type, if supported."""
     if not isinstance(onnx_type, int):
         # Already a NumPy type
         return onnx_type
@@ -117,6 +118,7 @@ def get_numpy_type(onnx_type):
 def get_onnx_tensor_dtype(
     onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProto],
 ) -> Union[np.dtype, "onnx.TensorProto.DataType"]:
+    """Determine the NumPy dtype or ONNX tensor data type from an ONNX tensor."""
     if isinstance(onnx_tensor, onnx.TensorProto):
         onnx_dtype = onnx_tensor.data_type
     elif isinstance(onnx_tensor, onnx.SparseTensorProto):
@@ -147,6 +149,7 @@ def get_onnx_tensor_dtype(
 
 
 def get_onnx_tensor_type(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProto]) -> str:
+    """Determine the ONNX tensor type from a given ONNX TensorProto or ValueInfoProto."""
     if isinstance(onnx_tensor, onnx.TensorProto):
         return "tensor_type"
     elif onnx_tensor.type.HasField("tensor_type"):
@@ -166,6 +169,7 @@ def get_onnx_tensor_type(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProt
 
 
 def get_onnx_tensor_type(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProto]) -> str:
+    """Identifies and returns the specific data type category of a given ONNX tensor."""
     if isinstance(onnx_tensor, onnx.TensorProto):
         return "tensor_type"
     elif onnx_tensor.type.HasField("tensor_type"):
@@ -187,9 +191,7 @@ def get_onnx_tensor_type(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProt
 class OnnxImporter(BaseImporter):
     @staticmethod
     def get_opset(model_or_func: Union[onnx.ModelProto, onnx.FunctionProto]):
-        """Return the ONNX opset version for the given ONNX model or function, or None if the information is
-        unavailable.
-        """
+        """Get the ONNX opset version for the given ONNX model or function."""
         class_name = "Function" if isinstance(model_or_func, onnx.FunctionProto) else "Model"
         try:
             for importer in OnnxImporter.get_import_domains(model_or_func):
@@ -208,6 +210,7 @@ class OnnxImporter(BaseImporter):
 
     @staticmethod
     def import_tensor(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProto, onnx.SparseTensorProto]) -> Tensor:
+        """Converts an ONNX tensor into a corresponding internal Tensor representation."""
         if isinstance(onnx_tensor, onnx.SparseTensorProto):
             return Constant(
                 name=onnx_tensor.values.name,
@@ -238,6 +241,7 @@ class OnnxImporter(BaseImporter):
         opset: int,
         import_domains: onnx.OperatorSetIdProto,
     ) -> "OrderedDict[str, Any]":
+        """Import ONNX attribute values, converting them to corresponding Python objects for further processing."""
         attr_dict = OrderedDict()
         for attr in onnx_attributes:
 
@@ -291,6 +295,7 @@ class OnnxImporter(BaseImporter):
         import_domains: onnx.OperatorSetIdProto,
     ) -> Node:
         # Optional inputs/outputs are represented by empty tensors. All other tensors should already have been populated during shape inference.
+        """Imports an ONNX node, configuring attributes, inputs, and outputs for graph integrati"""
         def get_tensor(name: str, check_outer_graph=True):
             """Retrieve a tensor by its name, prioritizing the subgraph tensor map and optionally checking the outer
             graph.
@@ -347,6 +352,7 @@ class OnnxImporter(BaseImporter):
         model_opset: int = None,
         model_import_domains: onnx.OperatorSetIdProto = None,
     ) -> Function:
+        """Imports an ONNX function to a Function object using the specified opset and import domains."""
         opset = OnnxImporter.get_opset(onnx_function) or model_opset
         import_domains = OnnxImporter.get_import_domains(onnx_function) or model_import_domains
         subgraph_tensor_map = OrderedDict()  # Tensors in this function
@@ -398,18 +404,7 @@ class OnnxImporter(BaseImporter):
         producer_version: str = None,
         functions: List[Function] = None,
     ) -> Graph:
-        """
-        Imports a Graph from an ONNX Graph.
-
-        Args:
-            onnx_graph (onnx.GraphProto): The ONNX graph to import.
-
-            tensor_map (OrderedDict[str, Tensor]): A mapping of tensor names to Tensors. This is generally only useful for subgraph import.
-            opset (int): The ONNX opset to use for this graph.
-            producer_name (str): The name of the tool used to generate the model. Defaults to "".
-            producer_version (str): The version of the generating tool. Defaults to "".
-            functions (List[Function]): The list of custom functions which are available to use in the model.
-        """
+        """Converts an ONNX GraphProto into an Ultralytics Graph."""
         functions = misc.default_value(functions, [])
         tensor_map = copy.copy(misc.default_value(tensor_map, OrderedDict()))  # Outer graph tensors, read-only
         subgraph_tensor_map = OrderedDict()  # Tensors in this subgraph
@@ -495,15 +490,7 @@ class OnnxImporter(BaseImporter):
 
 
 def import_onnx(onnx_model: "onnx.ModelProto") -> Graph:
-    """
-    Import an onnx-graphsurgeon Graph from the provided ONNX model.
-
-    Args:
-        onnx_model (onnx.ModelProto): The ONNX model.
-
-    Returns:
-        Graph: A corresponding onnx-graphsurgeon Graph.
-    """
+    """Imports an ONNX ModelProto and converts it to an onnx-graphsurgeon Graph."""
     model_opset = OnnxImporter.get_opset(onnx_model)
     model_import_domains = OnnxImporter.get_import_domains(onnx_model)
     functions: List[Function] = [

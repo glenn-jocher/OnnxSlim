@@ -7,7 +7,7 @@ import pytest
 
 
 def parse_arguments():
-    """Parses command-line arguments for specifying the ONNX model directory."""
+    """Parses command-line arguments to specify the directory containing ONNX model files."""
     parser = argparse.ArgumentParser(description="Test script for ONNX models")
     parser.add_argument(
         "--model-dir",
@@ -28,9 +28,7 @@ def model_file(request):
 
 
 def test_model_file(model_file):
-    """Tests the slimming of an ONNX model file using the onnxslim command, and validates the process by checking the
-    command output.
-    """
+    """Tests slimming of an ONNX model file with 'onnxslim' and validates the command's execution."""
     slim_model_file = model_file.replace(".onnx", "_slim.onnx")
     command = f"onnxslim {model_file} {slim_model_file}"
     result = subprocess.run(command, shell=True, capture_output=True, text=True)

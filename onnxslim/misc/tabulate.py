@@ -20,7 +20,7 @@ except ImportError:
 
 
 def _is_file(f):
-    """Check if an object 'f' is an instance of io.IOBase."""
+    """Determine if the given object 'f' is an instance of io.IOBase."""
     return isinstance(f, io.IOBase)
 
 
@@ -105,16 +105,14 @@ TableFormat = namedtuple(
 
 
 def _is_separating_line(row):
-    """Determine if a row is a separating line based on its type and specific content conditions."""
+    """Check if a row is designated as a separating line based on its type and specific content criteria."""
     return type(row) in {list, str} and (
         (len(row) >= 1 and row[0] == SEPARATING_LINE) or (len(row) >= 2 and row[1] == SEPARATING_LINE)
     )
 
 
 def _pipe_segment_with_colons(align, colwidth):
-    """Return a segment of a horizontal line with optional colons which indicate column's alignment (as in `pipe` output
-    format).
-    """
+    """Generate horizontal line segments with colons for column alignment in `pipe` output format."""
     w = colwidth
     if align in {"right", "decimal"}:
         return ("-" * (w - 1)) + ":"
@@ -127,7 +125,7 @@ def _pipe_segment_with_colons(align, colwidth):
 
 
 def _pipe_line_with_colons(colwidths, colaligns):
-    """Return a horizontal line with optional colons to indicate column's alignment (as in `pipe` output format)."""
+    """Generate a horizontal line with colons indicating column alignments for `pipe` output format."""
     if not colaligns:  # e.g. printing an empty data frame (github issue #15)
         colaligns = [""] * len(colwidths)
     segments = [_pipe_segment_with_colons(a, w) for a, w in zip(colaligns, colwidths)]
@@ -135,7 +133,7 @@ def _pipe_line_with_colons(colwidths, colaligns):
 
 
 def _mediawiki_row_with_attrs(separator, cell_values, colwidths, colaligns):
-    """Returns a MediaWiki table row with specific alignment attributes for each cell based on given parameters."""
+    """Returns a MediaWiki table row with cell alignment attributes using given separators and column widths."""
     alignment = {
         "left": "",
         "right": 'style="text-align: right;"| ',
@@ -158,12 +156,12 @@ def _textile_row_with_attrs(cell_values, colwidths, colaligns):
 
 
 def _html_begin_table_without_header(colwidths_ignore, colaligns_ignore):
-    """Generate the beginning of an HTML table without a header row."""
+    """Generate the beginning of an HTML table without including a header row."""
     return "<table>\n<tbody>"
 
 
 def _html_row_with_attrs(celltag, unsafe, cell_values, colwidths, colaligns):
-    """Generate an HTML table row with specified attributes for each cell."""
+    """Generate an HTML table row with cell attributes such as alignment and content safety."""
     alignment = {
         "left": "",
         "right": ' style="text-align: right;"',
@@ -186,7 +184,7 @@ def _html_row_with_attrs(celltag, unsafe, cell_values, colwidths, colaligns):
 
 
 def _moin_row_with_attrs(celltag, cell_values, colwidths, colaligns, header=""):
-    """Generate a row of HTML table cells with specified tags, values, alignments, and optional headers."""
+    """Create a row of MoinMoin table cells with specified tags, values, alignments, and optional headers."""
     alignment = {
         "left": "",
         "right": '<style="text-align: right;">',
@@ -200,9 +198,7 @@ def _moin_row_with_attrs(celltag, cell_values, colwidths, colaligns, header=""):
 
 
 def _latex_line_begin_tabular(colwidths, colaligns, booktabs=False, longtable=False):
-    """Generate LaTeX tabular or longtable environment with specified column widths, alignments, and optional booktabs
-    formatting.
-    """
+    """Generate a LaTeX tabular or longtable environment string based on column widths, alignments, and format options."""
     alignment = {"left": "l", "right": "r", "center": "c", "decimal": "r"}
     tabular_columns_fmt = "".join([alignment.get(a, "l") for a in colaligns])
     return "\n".join(
@@ -214,7 +210,7 @@ def _latex_line_begin_tabular(colwidths, colaligns, booktabs=False, longtable=Fa
 
 
 def _asciidoc_row(is_header, *args):
-    """Handle header and data rows for asciidoc format."""
+    """Generate formatted AsciiDoc table rows, handling both header and data rows."""
 
     def make_header_line(is_header, colwidths, colaligns):
         # generate the column specifiers
@@ -279,9 +275,7 @@ LATEX_ESCAPE_RULES = {
 
 
 def _latex_row(cell_values, colwidths, colaligns, escrules=LATEX_ESCAPE_RULES):
-    """Generates a LaTeX table row with escaped special characters based on provided cell values, column widths, and
-    alignments.
-    """
+    """Generates a LaTeX table row with escaped special characters based on cell values, widths, and alignments."""
 
     def escape_char(c):
         return escrules.get(c, c)
@@ -292,7 +286,7 @@ def _latex_row(cell_values, colwidths, colaligns, escrules=LATEX_ESCAPE_RULES):
 
 
 def _rst_escape_first_column(rows, headers):
-    """Escapes empty values in the first column of rows and headers for reStructuredText (RST) formatting compliance."""
+    """Escapes empty values in the first column of rows/headers for reStructuredText compliance."""
 
     def escape_empty(val):
         return ".." if isinstance(val, (str, bytes)) and not val.strip() else val
@@ -776,13 +770,7 @@ _float_with_thousands_separators = re.compile(r"^(([+-]?[0-9]{1,3})(?:,([0-9]{3}
 
 
 def simple_separated_format(separator):
-    """
-    Construct a simple TableFormat with columns separated by a separator.
-
-    >>> tsv = simple_separated_format("\\t") ; \
-        tabulate([["foo", 1], ["spam", 23]], tablefmt=tsv) == 'foo \\t 1\\nspam\\t23'
-    True
-    """
+    """Constructs a simple TableFormat with columns separated by a specified separator."""
     return TableFormat(
         None,
         None,
@@ -796,30 +784,7 @@ def simple_separated_format(separator):
 
 
 def _isnumber_with_thousands_separator(string):
-    """
-    >>> _isnumber_with_thousands_separator(".")
-    False
-    >>> _isnumber_with_thousands_separator("1")
-    True
-    >>> _isnumber_with_thousands_separator("1.")
-    True
-    >>> _isnumber_with_thousands_separator(".1")
-    True
-    >>> _isnumber_with_thousands_separator("1000")
-    False
-    >>> _isnumber_with_thousands_separator("1,000")
-    True
-    >>> _isnumber_with_thousands_separator("1,0000")
-    False
-    >>> _isnumber_with_thousands_separator("1,000.1234")
-    True
-    >>> _isnumber_with_thousands_separator(b"1,000.1234")
-    True
-    >>> _isnumber_with_thousands_separator("+1,000.1234")
-    True
-    >>> _isnumber_with_thousands_separator("-1,000.1234")
-    True
-    """
+    """Determine if a string represents a number with thousands separators using regex."""
     try:
         string = string.decode()
     except (UnicodeDecodeError, AttributeError):
@@ -838,18 +803,7 @@ def _isconvertible(conv, string):
 
 
 def _isnumber(string):
-    """
-    >>> _isnumber("123.45")
-    True
-    >>> _isnumber("123")
-    True
-    >>> _isnumber("spam")
-    False
-    >>> _isnumber("123e45678")
-    False
-    >>> _isnumber("inf")
-    True
-    """
+    """Determine if a string represents a numerical value including infinity and NaN."""
     if not _isconvertible(float, string):
         return False
     elif isinstance(string, (str, bytes)) and (math.isinf(float(string)) or math.isnan(float(string))):
@@ -858,12 +812,7 @@ def _isnumber(string):
 
 
 def _isint(string, inttype=int):
-    """
-    >>> _isint("123")
-    True
-    >>> _isint("123.45")
-    False
-    """
+    """Check if a string or object represents an integer type, including NumPy integer types."""
     return (
         type(string) is inttype
         or (
@@ -875,32 +824,12 @@ def _isint(string, inttype=int):
 
 
 def _isbool(string):
-    """
-    >>> _isbool(True)
-    True
-    >>> _isbool("False")
-    True
-    >>> _isbool(1)
-    False
-    """
+    """Check if a value is a boolean or a string representation of a boolean."""
     return type(string) is bool or (isinstance(string, (bytes, str)) and string in {"True", "False"})
 
 
 def _type(string, has_invisible=True, numparse=True):
-    """
-    The least generic type (type(None), int, float, str, unicode).
-
-    >>> _type(None) is type(None)
-    True
-    >>> _type("foo") is type("")
-    True
-    >>> _type("1") is type(1)
-    True
-    >>> _type('\x1b[31m42\x1b[0m') is type(42)
-    True
-    >>> _type('\x1b[31m42\x1b[0m') is type(42)
-    True
-    """
+    """Infer data type, stripping ANSI and considering int, float, bool, date/time, str, bytes, and None inputs."""
 
     if has_invisible and isinstance(string, (str, bytes)):
         string = _strip_ansi(string)
@@ -922,20 +851,7 @@ def _type(string, has_invisible=True, numparse=True):
 
 
 def _afterpoint(string):
-    """
-    Symbols after a decimal point, -1 if the string lacks the decimal point.
-
-    >>> _afterpoint("123.45")
-    2
-    >>> _afterpoint("1001")
-    -1
-    >>> _afterpoint("eggs")
-    -1
-    >>> _afterpoint("123e45")
-    2
-    >>> _afterpoint("123,456.78")
-    2
-    """
+    """Determine the number of digits after the decimal point in a numeric string; returns -1 if no decimal point."""
     if not _isnumber(string) and not _isnumber_with_thousands_separator(string):
         return -1  # not a number
     if _isint(string):
@@ -946,34 +862,19 @@ def _afterpoint(string):
 
 
 def _padleft(width, s):
-    """
-    Flush right.
-
-    >>> _padleft(6, '\u044f\u0439\u0446\u0430') == '  \u044f\u0439\u0446\u0430'
-    True
-    """
+    """Pad a string `s` to the left ensuring it occupies a width of `width` characters."""
     fmt = "{0:>%ds}" % width
     return fmt.format(s)
 
 
 def _padright(width, s):
-    """
-    Flush left.
-
-    >>> _padright(6, '\u044f\u0439\u0446\u0430') == '\u044f\u0439\u0446\u0430  '
-    True
-    """
+    """Pad string `s` to the right with spaces to fit the specified `width`."""
     fmt = "{0:<%ds}" % width
     return fmt.format(s)
 
 
 def _padboth(width, s):
-    """
-    Center string.
-
-    >>> _padboth(6, '\u044f\u0439\u0446\u0430') == ' \u044f\u0439\u0446\u0430 '
-    True
-    """
+    """Center-align a string within a given width."""
     fmt = "{0:^%ds}" % width
     return fmt.format(s)
 
@@ -984,19 +885,7 @@ def _padnone(ignore_width, s):
 
 
 def _strip_ansi(s):
-    r"""
-    Remove ANSI escape sequences, both CSI (color codes, etc) and OSC hyperlinks.
-
-    CSI sequences are simply removed from the output, while OSC hyperlinks are replaced
-    with the link text. Note: it may be desirable to show the URI instead but this is not
-    supported.
-
-    >>> repr(_strip_ansi('\x1B]8;;https://example.com\x1B\\This is a link\x1B]8;;\x1B\\'))
-    "'This is a link'"
-
-    >>> repr(_strip_ansi('\x1b[31mred\x1b[0m text'))
-    "'red text'"
-    """
+    """Remove ANSI escape sequences, including CSI color codes and OSC hyperlinks, from a string."""
     if isinstance(s, str):
         return _ansi_codes.sub(r"\4", s)
     else:  # a bytestring
@@ -1004,12 +893,7 @@ def _strip_ansi(s):
 
 
 def _visible_width(s):
-    """
-    Visible width of a printed string. ANSI color codes are removed.
-
-    >>> _visible_width('\x1b[31mhello\x1b[0m'), _visible_width("world")
-    (5, 5)
-    """
+    """Calculate the visible width of a string, removing ANSI color codes and supporting wide characters."""
     # optional wide-character support
     len_fn = wcwidth.wcswidth if wcwidth is not None and WIDE_CHARS_MODE else len
     if isinstance(s, (str, bytes)):
@@ -1019,7 +903,7 @@ def _visible_width(s):
 
 
 def _is_multiline(s):
-    """Check if the input string or bytestring contains multiline ANSI codes."""
+    """Check if a string or bytes object contains multiline ANSI codes or sequences."""
     if isinstance(s, str):
         return bool(re.search(_multiline_codes, s))
     else:  # a bytestring
@@ -1027,12 +911,12 @@ def _is_multiline(s):
 
 
 def _multiline_width(multiline_s, line_width_fn=len):
-    """Visible width of a potentially multiline content."""
+    """Compute the visible width of a multiline string by evaluating the length of each line."""
     return max(map(line_width_fn, re.split("[\r\n]", multiline_s)))
 
 
 def _choose_width_fn(has_invisible, enable_widechars, is_multiline):
-    """Return a function to calculate visible cell width."""
+    """Return a function to calculate the visible width of a cell based on specified conditions."""
     if has_invisible:
         line_width_fn = _visible_width
     elif enable_widechars:  # optional wide-character support if available
@@ -1043,9 +927,7 @@ def _choose_width_fn(has_invisible, enable_widechars, is_multiline):
 
 
 def _align_column_choose_padfn(strings, alignment, has_invisible):
-    """Selects the appropriate padding function based on alignment and visibility of invisible characters for given
-    strings.
-    """
+    """Selects appropriate padding function for aligning table columns based on given alignment and invisible character handling."""
     if alignment == "right":
         if not PRESERVE_WHITESPACE:
             strings = [s.strip() for s in strings]
@@ -1072,9 +954,7 @@ def _align_column_choose_padfn(strings, alignment, has_invisible):
 
 
 def _align_column_choose_width_fn(has_invisible, enable_widechars, is_multiline):
-    """Choose the appropriate width function for aligning text columns based on visibility, wide characters support, and
-    multiline status.
-    """
+    """Choose the appropriate width function for aligning text columns considering visibility, wide chars, and multiline."""
     if has_invisible:
         line_width_fn = _visible_width
     elif enable_widechars:  # optional wide-character support if available
@@ -1085,12 +965,12 @@ def _align_column_choose_width_fn(has_invisible, enable_widechars, is_multiline)
 
 
 def _align_column_multiline_width(multiline_s, line_width_fn=len):
-    """Visible width of a potentially multiline content."""
+    """Calculate the visible width of potentially multiline content."""
     return list(map(line_width_fn, re.split("[\r\n]", multiline_s)))
 
 
 def _flat_list(nested_list):
-    """Flatten a nested list into a single list containing all the elements."""
+    """Flatten a nested list into a single list containing all its elements."""
     ret = []
     for item in nested_list:
         if isinstance(item, list):
@@ -1108,7 +988,7 @@ def _align_column(
     enable_widechars=False,
     is_multiline=False,
 ):
-    """[string] -> [padded_string]"""
+    """Aligns text within a column based on the specified alignment and visibility settings."""
     strings, padfn = _align_column_choose_padfn(strings, alignment, has_invisible)
     width_fn = _align_column_choose_width_fn(has_invisible, enable_widechars, is_multiline)
 
@@ -1141,7 +1021,7 @@ def _align_column(
 
 
 def _more_generic(type1, type2):
-    """Return the more generic type between type1 and type2 based on predefined type hierarchy."""
+    """Return the more generic type between type1 and type2 based on a predefined hierarchy."""
     types = {
         type(None): 0,
         bool: 1,
@@ -1163,43 +1043,13 @@ def _more_generic(type1, type2):
 
 
 def _column_type(strings, has_invisible=True, numparse=True):
-    """
-    The least generic type all column values are convertible to.
-
-    >>> _column_type([True, False]) is bool
-    True
-    >>> _column_type(["1", "2"]) is int
-    True
-    >>> _column_type(["1", "2.3"]) is float
-    True
-    >>> _column_type(["1", "2.3", "four"]) is str
-    True
-    >>> _column_type(["four", '\u043f\u044f\u0442\u044c']) is str
-    True
-    >>> _column_type([None, "brux"]) is str
-    True
-    >>> _column_type([1, 2, None]) is int
-    True
-    >>> import datetime as dt
-    >>> _column_type([dt.datetime(1991,2,19), dt.time(17,35)]) is str
-    True
-    """
+    """Determine the least generic type to which all column values can be converted."""
     types = [_type(s, has_invisible, numparse) for s in strings]
     return reduce(_more_generic, types, bool)
 
 
 def _format(val, valtype, floatfmt, intfmt, missingval="", has_invisible=True):
-    """
-    Format a value according to its type.
-
-    Unicode is supported:
-
-    >>> hrow = ['\u0431\u0443\u043a\u0432\u0430', '\u0446\u0438\u0444\u0440\u0430'] ; \
-        tbl = [['\u0430\u0437', 2], ['\u0431\u0443\u043a\u0438', 4]] ; \
-        good_result = '\\u0431\\u0443\\u043a\\u0432\\u0430      \\u0446\\u0438\\u0444\\u0440\\u0430\\n-------  -------\\n\\u0430\\u0437             2\\n\\u0431\\u0443\\u043a\\u0438           4' ; \
-        tabulate(tbl, headers=hrow) == good_result
-    True
-    """  # noqa
+    """Format a value based on its type and specified formatting rules."""
     if val is None:
         return missingval
 
@@ -1222,7 +1072,7 @@ def _format(val, valtype, floatfmt, intfmt, missingval="", has_invisible=True):
 
 
 def _align_header(header, alignment, width, visible_width, is_multiline=False, width_fn=None):
-    """Pad string header to the specified width given its visible width and alignment."""
+    """Align a tabular data header to a specified width based on the provided alignment."""
     "Pad string header to width chars given known visible_width of the header."
     if is_multiline:
         header_lines = re.split(_multiline_codes, header)
@@ -1242,9 +1092,7 @@ def _align_header(header, alignment, width, visible_width, is_multiline=False, w
 
 
 def _remove_separating_lines(rows):
-    """Removes separating lines from a list of rows, returning the filtered rows and the indexes of the removed
-    lines.
-    """
+    """Filters out separating lines from a list of rows, returning the cleaned rows and indices of removed lines."""
     if type(rows) != list:
         return rows, None
     separating_lines = []
@@ -1265,7 +1113,7 @@ def _reinsert_separating_lines(rows, separating_lines):
 
 
 def _prepend_row_index(rows, index):
-    """Add a left-most index column."""
+    """Prepend a left-most index column to rows, preserving separating lines."""
     if index is None or index is False:
         return rows
     if isinstance(index, Sized) and len(index) != len(rows):
@@ -1293,37 +1141,7 @@ def _bool(val):
 
 
 def _normalize_tabular_data(tabular_data, headers, showindex="default"):
-    """
-    Transform a supported data type to a list of lists, and a list of headers, with headers padding.
-
-    Supported tabular data types:
-
-    * list-of-lists or another iterable of iterables
-
-    * list of named tuples (usually used with headers="keys")
-
-    * list of dicts (usually used with headers="keys")
-
-    * list of OrderedDicts (usually used with headers="keys")
-
-    * list of dataclasses (Python 3.7+ only, usually used with headers="keys")
-
-    * 2D NumPy arrays
-
-    * NumPy record arrays (usually used with headers="keys")
-
-    * dict of iterables (usually used with headers="keys")
-
-    * pandas.DataFrame (usually used with headers="keys")
-
-    The first row can be used as headers if headers="firstrow",
-    column indices can be used as headers if headers="keys".
-
-    If showindex="default", show row indices of the pandas.DataFrame.
-    If showindex="always", show row indices for all types of data.
-    If showindex="never", don't show row indices for all types of data.
-    If showindex is an iterable, show its values as row indices.
-    """
+    """Normalize tabular data to a list of lists, with appropriate headers and optional row indices."""
 
     try:
         bool(headers)
@@ -1460,7 +1278,7 @@ def _normalize_tabular_data(tabular_data, headers, showindex="default"):
 
 
 def _wrap_text_to_colwidths(list_of_lists, colwidths, numparses=True):
-    """Wrap text in each cell of a list of lists to fit specified column widths, optionally parsing numbers."""
+    """Wrap cell text in a list of lists to fit specified column widths with optional number parsing."""
     num_cols = len(list_of_lists[0]) if len(list_of_lists) else 0
     numparses = _expand_iterable(numparses, num_cols, True)
 
@@ -1489,25 +1307,7 @@ def _wrap_text_to_colwidths(list_of_lists, colwidths, numparses=True):
 
 
 def _to_str(s, encoding="utf8", errors="ignore"):
-    """
-    A type safe wrapper for converting a bytestring to str. This is essentially just
-    a wrapper around .decode() intended for use with things like map(), but with some
-    specific behavior:
-
-    1. if the given parameter is not a bytestring, it is returned unmodified
-    2. decode() is called for the given parameter and assumes utf8 encoding, but the
-       default error behavior is changed from 'strict' to 'ignore'
-
-    >>> repr(_to_str(b'foo'))
-    "'foo'"
-
-    >>> repr(_to_str('foo'))
-    "'foo'"
-
-    >>> repr(_to_str(42))
-    "'42'"
-
-    """
+    """Decode a bytestring to a UTF-8 string, ignoring errors; pass through if already a string or not bytes."""
     if isinstance(s, bytes):
         return s.decode(encoding=encoding, errors=errors)
     return str(s)
@@ -1532,499 +1332,7 @@ def tabulate(
     rowalign=None,
     maxheadercolwidths=None,
 ):
-    """
-    Format a fixed width table for pretty printing.
-
-    >>> print(tabulate([[1, 2.34], [-56, "8.999"], ["2", "10001"]]))
-    ---  ---------
-      1      2.34
-    -56      8.999
-      2  10001
-    ---  ---------
-
-    The first required argument (`tabular_data`) can be a
-    list-of-lists (or another iterable of iterables), a list of named
-    tuples, a dictionary of iterables, an iterable of dictionaries,
-    an iterable of dataclasses (Python 3.7+), a two-dimensional NumPy array,
-    NumPy record array, or a Pandas' dataframe.
-
-
-    Table headers
-    -------------
-
-    To print nice column headers, supply the second argument (`headers`):
-
-      - `headers` can be an explicit list of column headers
-      - if `headers="firstrow"`, then the first row of data is used
-      - if `headers="keys"`, then dictionary keys or column indices are used
-
-    Otherwise a headerless table is produced.
-
-    If the number of headers is less than the number of columns, they
-    are supposed to be names of the last columns. This is consistent
-    with the plain-text format of R and Pandas' dataframes.
-
-    >>> print(tabulate([["sex","age"],["Alice","F",24],["Bob","M",19]],
-    ...       headers="firstrow"))
-           sex      age
-    -----  -----  -----
-    Alice  F         24
-    Bob    M         19
-
-    By default, pandas.DataFrame data have an additional column called
-    row index. To add a similar column to all other types of data,
-    use `showindex="always"` or `showindex=True`. To suppress row indices
-    for all types of data, pass `showindex="never" or `showindex=False`.
-    To add a custom row index column, pass `showindex=some_iterable`.
-
-    >>> print(tabulate([["F",24],["M",19]], showindex="always"))
-    -  -  --
-    0  F  24
-    1  M  19
-    -  -  --
-
-
-    Column and Headers alignment
-    ----------------------------
-
-    `tabulate` tries to detect column types automatically, and aligns
-    the values properly. By default it aligns decimal points of the
-    numbers (or flushes integer numbers to the right), and flushes
-    everything else to the left. Possible column alignments
-    (`numalign`, `stralign`) are: "right", "center", "left", "decimal"
-    (only for `numalign`), and None (to disable alignment).
-
-    `colglobalalign` allows for global alignment of columns, before any
-        specific override from `colalign`. Possible values are: None
-        (defaults according to coltype), "right", "center", "decimal",
-        "left".
-    `colalign` allows for column-wise override starting from left-most
-        column. Possible values are: "global" (no override), "right",
-        "center", "decimal", "left".
-    `headersglobalalign` allows for global headers alignment, before any
-        specific override from `headersalign`. Possible values are: None
-        (follow columns alignment), "right", "center", "left".
-    `headersalign` allows for header-wise override starting from left-most
-        given header. Possible values are: "global" (no override), "same"
-        (follow column alignment), "right", "center", "left".
-
-    Note on intended behaviour: If there is no `tabular_data`, any column
-        alignment argument is ignored. Hence, in this case, header
-        alignment cannot be inferred from column alignment.
-
-    Table formats
-    -------------
-
-    `intfmt` is a format specification used for columns which
-    contain numeric data without a decimal point. This can also be
-    a list or tuple of format strings, one per column.
-
-    `floatfmt` is a format specification used for columns which
-    contain numeric data with a decimal point. This can also be
-    a list or tuple of format strings, one per column.
-
-    `None` values are replaced with a `missingval` string (like
-    `floatfmt`, this can also be a list of values for different
-    columns):
-
-    >>> print(tabulate([["spam", 1, None],
-    ...                 ["eggs", 42, 3.14],
-    ...                 ["other", None, 2.7]], missingval="?"))
-    -----  --  ----
-    spam    1  ?
-    eggs   42  3.14
-    other   ?  2.7
-    -----  --  ----
-
-    Various plain-text table formats (`tablefmt`) are supported:
-    'plain', 'simple', 'grid', 'pipe', 'orgtbl', 'rst', 'mediawiki',
-    'latex', 'latex_raw', 'latex_booktabs', 'latex_longtable' and tsv.
-    Variable `tabulate_formats`contains the list of currently supported formats.
-
-    "plain" format doesn't use any pseudographics to draw tables,
-    it separates columns with a double space:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                 ["strings", "numbers"], "plain"))
-    strings      numbers
-    spam         41.9999
-    eggs        451
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="plain"))
-    spam   41.9999
-    eggs  451
-
-    "simple" format is like Pandoc simple_tables:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                 ["strings", "numbers"], "simple"))
-    strings      numbers
-    ---------  ---------
-    spam         41.9999
-    eggs        451
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="simple"))
-    ----  --------
-    spam   41.9999
-    eggs  451
-    ----  --------
-
-    "grid" is similar to tables produced by Emacs table.el package or
-    Pandoc grid_tables:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "grid"))
-    +-----------+-----------+
-    | strings   |   numbers |
-    +===========+===========+
-    | spam      |   41.9999 |
-    +-----------+-----------+
-    | eggs      |  451      |
-    +-----------+-----------+
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="grid"))
-    +------+----------+
-    | spam |  41.9999 |
-    +------+----------+
-    | eggs | 451      |
-    +------+----------+
-
-    "simple_grid" draws a grid using single-line box-drawing
-    characters:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "simple_grid"))
-    ┌───────────┬───────────┐
-    │ strings   │   numbers │
-    ├───────────┼───────────┤
-    │ spam      │   41.9999 │
-    ├───────────┼───────────┤
-    │ eggs      │  451      │
-    └───────────┴───────────┘
-
-    "rounded_grid" draws a grid using single-line box-drawing
-    characters with rounded corners:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "rounded_grid"))
-    ╭───────────┬───────────╮
-    │ strings   │   numbers │
-    ├───────────┼───────────┤
-    │ spam      │   41.9999 │
-    ├───────────┼───────────┤
-    │ eggs      │  451      │
-    ╰───────────┴───────────╯
-
-    "heavy_grid" draws a grid using bold (thick) single-line box-drawing
-    characters:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "heavy_grid"))
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
-    ┃ strings   ┃   numbers ┃
-    ┣━━━━━━━━━━━╋━━━━━━━━━━━┫
-    ┃ spam      ┃   41.9999 ┃
-    ┣━━━━━━━━━━━╋━━━━━━━━━━━┫
-    ┃ eggs      ┃  451      ┃
-    ┗━━━━━━━━━━━┻━━━━━━━━━━━┛
-
-    "mixed_grid" draws a grid using a mix of light (thin) and heavy (thick) lines
-    box-drawing characters:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "mixed_grid"))
-    ┍━━━━━━━━━━━┯━━━━━━━━━━━┑
-    │ strings   │   numbers │
-    ┝━━━━━━━━━━━┿━━━━━━━━━━━┥
-    │ spam      │   41.9999 │
-    ├───────────┼───────────┤
-    │ eggs      │  451      │
-    ┕━━━━━━━━━━━┷━━━━━━━━━━━┙
-
-    "double_grid" draws a grid using double-line box-drawing
-    characters:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "double_grid"))
-    ╔═══════════╦═══════════╗
-    ║ strings   ║   numbers ║
-    ╠═══════════╬═══════════╣
-    ║ spam      ║   41.9999 ║
-    ╠═══════════╬═══════════╣
-    ║ eggs      ║  451      ║
-    ╚═══════════╩═══════════╝
-
-    "fancy_grid" draws a grid using a mix of single and
-    double-line box-drawing characters:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "fancy_grid"))
-    ╒═══════════╤═══════════╕
-    │ strings   │   numbers │
-    ╞═══════════╪═══════════╡
-    │ spam      │   41.9999 │
-    ├───────────┼───────────┤
-    │ eggs      │  451      │
-    ╘═══════════╧═══════════╛
-
-    "outline" is the same as the "grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "outline"))
-    +-----------+-----------+
-    | strings   |   numbers |
-    +===========+===========+
-    | spam      |   41.9999 |
-    | eggs      |  451      |
-    +-----------+-----------+
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="outline"))
-    +------+----------+
-    | spam |  41.9999 |
-    | eggs | 451      |
-    +------+----------+
-
-    "simple_outline" is the same as the "simple_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "simple_outline"))
-    ┌───────────┬───────────┐
-    │ strings   │   numbers │
-    ├───────────┼───────────┤
-    │ spam      │   41.9999 │
-    │ eggs      │  451      │
-    └───────────┴───────────┘
-
-    "rounded_outline" is the same as the "rounded_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "rounded_outline"))
-    ╭───────────┬───────────╮
-    │ strings   │   numbers │
-    ├───────────┼───────────┤
-    │ spam      │   41.9999 │
-    │ eggs      │  451      │
-    ╰───────────┴───────────╯
-
-    "heavy_outline" is the same as the "heavy_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "heavy_outline"))
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
-    ┃ strings   ┃   numbers ┃
-    ┣━━━━━━━━━━━╋━━━━━━━━━━━┫
-    ┃ spam      ┃   41.9999 ┃
-    ┃ eggs      ┃  451      ┃
-    ┗━━━━━━━━━━━┻━━━━━━━━━━━┛
-
-    "mixed_outline" is the same as the "mixed_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "mixed_outline"))
-    ┍━━━━━━━━━━━┯━━━━━━━━━━━┑
-    │ strings   │   numbers │
-    ┝━━━━━━━━━━━┿━━━━━━━━━━━┥
-    │ spam      │   41.9999 │
-    │ eggs      │  451      │
-    ┕━━━━━━━━━━━┷━━━━━━━━━━━┙
-
-    "double_outline" is the same as the "double_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "double_outline"))
-    ╔═══════════╦═══════════╗
-    ║ strings   ║   numbers ║
-    ╠═══════════╬═══════════╣
-    ║ spam      ║   41.9999 ║
-    ║ eggs      ║  451      ║
-    ╚═══════════╩═══════════╝
-
-    "fancy_outline" is the same as the "fancy_grid" format but doesn't draw lines between rows:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "fancy_outline"))
-    ╒═══════════╤═══════════╕
-    │ strings   │   numbers │
-    ╞═══════════╪═══════════╡
-    │ spam      │   41.9999 │
-    │ eggs      │  451      │
-    ╘═══════════╧═══════════╛
-
-    "pipe" is like tables in PHP Markdown Extra extension or Pandoc
-    pipe_tables:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "pipe"))
-    | strings   |   numbers |
-    |:----------|----------:|
-    | spam      |   41.9999 |
-    | eggs      |  451      |
-
-    "presto" is like tables produce by the Presto CLI:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "presto"))
-     strings   |   numbers
-    -----------+-----------
-     spam      |   41.9999
-     eggs      |  451
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="pipe"))
-    |:-----|---------:|
-    | spam |  41.9999 |
-    | eggs | 451      |
-
-    "orgtbl" is like tables in Emacs org-mode and orgtbl-mode. They
-    are slightly different from "pipe" format by not using colons to
-    define column alignment, and using a "+" sign to indicate line
-    intersections:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "orgtbl"))
-    | strings   |   numbers |
-    |-----------+-----------|
-    | spam      |   41.9999 |
-    | eggs      |  451      |
-
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="orgtbl"))
-    | spam |  41.9999 |
-    | eggs | 451      |
-
-    "rst" is like a simple table format from reStructuredText; please
-    note that reStructuredText accepts also "grid" tables:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]],
-    ...                ["strings", "numbers"], "rst"))
-    =========  =========
-    strings      numbers
-    =========  =========
-    spam         41.9999
-    eggs        451
-    =========  =========
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="rst"))
-    ====  ========
-    spam   41.9999
-    eggs  451
-    ====  ========
-
-    "mediawiki" produces a table markup used in Wikipedia and on other
-    MediaWiki-based sites:
-
-    >>> print(tabulate([["strings", "numbers"], ["spam", 41.9999], ["eggs", "451.0"]],
-    ...                headers="firstrow", tablefmt="mediawiki"))
-    {| class="wikitable" style="text-align: left;"
-    |+ <!-- caption -->
-    |-
-    ! strings   !! style="text-align: right;"|   numbers
-    |-
-    | spam      || style="text-align: right;"|   41.9999
-    |-
-    | eggs      || style="text-align: right;"|  451
-    |}
-
-    "html" produces HTML markup as an html.escape'd str
-    with a ._repr_html_ method so that Jupyter Lab and Notebook display the HTML
-    and a .str property so that the raw HTML remains accessible
-    the unsafehtml table format can be used if an unescaped HTML format is required:
-
-    >>> print(tabulate([["strings", "numbers"], ["spam", 41.9999], ["eggs", "451.0"]],
-    ...                headers="firstrow", tablefmt="html"))
-    <table>
-    <thead>
-    <tr><th>strings  </th><th style="text-align: right;">  numbers</th></tr>
-    </thead>
-    <tbody>
-    <tr><td>spam     </td><td style="text-align: right;">  41.9999</td></tr>
-    <tr><td>eggs     </td><td style="text-align: right;"> 451     </td></tr>
-    </tbody>
-    </table>
-
-    "latex" produces a tabular environment of LaTeX document markup:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="latex"))
-    \\begin{tabular}{lr}
-    \\hline
-     spam &  41.9999 \\\\
-     eggs & 451      \\\\
-    \\hline
-    \\end{tabular}
-
-    "latex_raw" is similar to "latex", but doesn't escape special characters,
-    such as backslash and underscore, so LaTeX commands may embedded into
-    cells' values:
-
-    >>> print(tabulate([["spam$_9$", 41.9999], ["\\\\emph{eggs}", "451.0"]], tablefmt="latex_raw"))
-    \\begin{tabular}{lr}
-    \\hline
-     spam$_9$    &  41.9999 \\\\
-     \\emph{eggs} & 451      \\\\
-    \\hline
-    \\end{tabular}
-
-    "latex_booktabs" produces a tabular environment of LaTeX document markup
-    using the booktabs.sty package:
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="latex_booktabs"))
-    \\begin{tabular}{lr}
-    \\toprule
-     spam &  41.9999 \\\\
-     eggs & 451      \\\\
-    \\bottomrule
-    \\end{tabular}
-
-    "latex_longtable" produces a tabular environment that can stretch along
-    multiple pages, using the longtable package for LaTeX.
-
-    >>> print(tabulate([["spam", 41.9999], ["eggs", "451.0"]], tablefmt="latex_longtable"))
-    \\begin{longtable}{lr}
-    \\hline
-     spam &  41.9999 \\\\
-     eggs & 451      \\\\
-    \\hline
-    \\end{longtable}
-
-
-    Number parsing
-    --------------
-    By default, anything which can be parsed as a number is a number.
-    This ensures numbers represented as strings are aligned properly.
-    This can lead to weird results for particular strings such as
-    specific git SHAs e.g. "42992e1" will be parsed into the number
-    429920 and aligned as such.
-
-    To completely disable number parsing (and alignment), use
-    `disable_numparse=True`. For more fine grained control, a list column
-    indices is used to disable number parsing only on those columns
-    e.g. `disable_numparse=[0, 2]` would disable number parsing only on the
-    first and third columns.
-
-    Column Widths and Auto Line Wrapping
-    ------------------------------------
-    Tabulate will, by default, set the width of each column to the length of the
-    longest element in that column. However, in situations where fields are expected
-    to reasonably be too long to look good as a single line, tabulate can help automate
-    word wrapping long fields for you. Use the parameter `maxcolwidth` to provide a
-    list of maximal column widths
-
-    >>> print(tabulate( \
-          [('1', 'John Smith', \
-            'This is a rather long description that might look better if it is wrapped a bit')], \
-          headers=("Issue Id", "Author", "Description"), \
-          maxcolwidths=[None, None, 30], \
-          tablefmt="grid"  \
-        ))
-    +------------+------------+-------------------------------+
-    |   Issue Id | Author     | Description                   |
-    +============+============+===============================+
-    |          1 | John Smith | This is a rather long         |
-    |            |            | description that might look   |
-    |            |            | better if it is wrapped a bit |
-    +------------+------------+-------------------------------+
-
-    Header column width can be specified in a similar way using `maxheadercolwidth`
-    """
+    """Pretty-print tabular data. See: https://github.com/ultralytics/ultralytics"""
 
     if tabular_data is None:
         tabular_data = []
@@ -2201,14 +1509,7 @@ def tabulate(
 
 
 def _expand_numparse(disable_numparse, column_count):
-    """
-    Return a list of bools of length `column_count` which indicates whether number parsing should be used on each
-    column.
-
-    If `disable_numparse` is a list of indices, each of those indices are False,
-    and everything else is True.
-    If `disable_numparse` is a bool, then the returned list is all the same.
-    """
+    """Expand numparse options to match the number of columns."""
     if not isinstance(disable_numparse, Iterable):
         return [not disable_numparse] * column_count
     numparses = [True] * column_count
@@ -2218,14 +1519,7 @@ def _expand_numparse(disable_numparse, column_count):
 
 
 def _expand_iterable(original, num_desired, default):
-    """
-    Expands the `original` argument to return a return a list of length `num_desired`.
-
-    If `original` is shorter than `num_desired`, it will
-    be padded with the value in `default`.
-    If `original` is not a list to begin with (i.e. scalar value) a list of
-    length `num_desired` completely populated with `default will be returned
-    """
+    """Expand a list-like input to a specified length, filling missing elements with a default value."""
     if isinstance(original, Iterable) and not isinstance(original, str):
         return original + [default] * (num_desired - len(original))
     else:
@@ -2233,7 +1527,7 @@ def _expand_iterable(original, num_desired, default):
 
 
 def _pad_row(cells, padding):
-    """Pads the strings in a list `cells` with spaces on both sides as specified by `padding`."""
+    """Pads the strings in a list of cells with spaces on both sides based on the specified padding."""
     if cells:
         pad = " " * padding
         return [pad + cell + pad for cell in cells]
@@ -2242,14 +1536,14 @@ def _pad_row(cells, padding):
 
 
 def _build_simple_row(padded_cells, rowfmt):
-    """Format a row from padded cells using the specified row format."""
+    """Format a row from padded cells specified by the row format."""
     "Format row according to DataRow format without padding."
     begin, sep, end = rowfmt
     return (begin + sep.join(padded_cells) + end).rstrip()
 
 
 def _build_row(padded_cells, colwidths, colaligns, rowfmt):
-    """Return a formatted string representing a row of data cells using the specified row format and alignment."""
+    """Format a data row using specified column widths and alignments for tabular display."""
     "Return a string which represents a row of data cells."
     if not rowfmt:
         return None
@@ -2260,13 +1554,13 @@ def _build_row(padded_cells, colwidths, colaligns, rowfmt):
 
 
 def _append_basic_row(lines, padded_cells, colwidths, colaligns, rowfmt, rowalign=None):
-    """Append a formatted row to the lines list using specified padding, column widths, alignments, and row format."""
+    """Append formatted row to lines using padding, column widths, alignments, and row format."""
     lines.append(_build_row(padded_cells, colwidths, colaligns, rowfmt))
     return lines
 
 
 def _align_cell_veritically(text_lines, num_lines, column_width, row_alignment):
-    """Align cell text vertically within a table column based on the specified number of lines, width, and alignment."""
+    """Align a cell's text vertically within a table column based on the specified number of lines, width, and alignment."""
     delta_lines = num_lines - len(text_lines)
     blank = [" " * column_width]
     if row_alignment == "bottom":
@@ -2280,9 +1574,7 @@ def _align_cell_veritically(text_lines, num_lines, column_width, row_alignment):
 
 
 def _append_multiline_row(lines, padded_multiline_cells, padded_widths, colaligns, rowfmt, pad, rowalign=None):
-    """Append a multiline row to the table, vertically aligning and padding cells based on the provided widths and
-    alignments.
-    """
+    """Append a multiline row to the table, preserving vertical alignment and padding based on column widths."""
     colwidths = [w - 2 * pad for w in padded_widths]
     cells_lines = [c.splitlines() for c in padded_multiline_cells]
     nlines = max(map(len, cells_lines))  # number of lines in the row
@@ -2300,9 +1592,7 @@ def _append_multiline_row(lines, padded_multiline_cells, padded_widths, colalign
 
 
 def _build_line(colwidths, colaligns, linefmt):
-    """Return a string representing a horizontal line formatted with column widths and alignments using the specified
-    format.
-    """
+    """Construct a string representing a horizontal line, formatted with specified column widths and alignments."""
     "Return a string which represents a horizontal line."
     if not linefmt:
         return None
@@ -2314,7 +1604,7 @@ def _build_line(colwidths, colaligns, linefmt):
 
 
 def _append_line(lines, colwidths, colaligns, linefmt):
-    """Append a formatted line to the list of lines based on column widths, alignments, and line format."""
+    """Append a formatted line to the lines list based on column widths, alignments, and line format."""
     lines.append(_build_line(colwidths, colaligns, linefmt))
     return lines
 
@@ -2328,12 +1618,12 @@ class JupyterHTMLStr(str):
 
     @property
     def str(self):
-        """Add a .str property so that the raw string is still accessible."""
+        """Generate the HTML representation of the JupyterHTMLStr object for Jupyter Notebooks."""
         return self
 
 
 def _format_table(fmt, headers, headersaligns, rows, colwidths, colaligns, is_multiline, rowaligns):
-    """Produce a plain-text representation of the table."""
+    """Format a table as a string based on the specified table format and padding."""
     lines = []
     hidden = fmt.with_header_hide if (headers and fmt.with_header_hide) else []
     pad = fmt.padding
@@ -2405,22 +1695,19 @@ class _CustomTextWrap(textwrap.TextWrapper):
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize the wrapper with support for wide characters and custom length logic."""
+        """Initialize `_CustomTextWrap` with support for wide characters, relational width calculations, and custom wrapping logic."""
         self._active_codes = []
         self.max_lines = None  # For python2 compatibility
         textwrap.TextWrapper.__init__(self, *args, **kwargs)
 
     @staticmethod
     def _len(item):
-        """Custom len that gets console column width for wide and non-wide characters as well as ignores color codes."""
+        """Return the visual length of a string, considering wide characters and ignoring ANSI escape codes."""
         stripped = _strip_ansi(item)
         return wcwidth.wcswidth(stripped) if wcwidth else len(stripped)
 
     def _update_lines(self, lines, new_line):
-        """Adds a new line to the list of lines the text is being wrapped into This function will also track any ANSI
-        color codes in this string as well as add any colors from previous lines order to preserve the same formatting
-        as a single unwrapped string.
-        """
+        """Tracks ANSI color codes and appends lines while preserving formatting."""
         code_matches = list(_ansi_codes.finditer(new_line))
         color_codes = [code.string[code.span()[0] : code.span()[1]] for code in code_matches]
 
@@ -2441,12 +1728,7 @@ class _CustomTextWrap(textwrap.TextWrapper):
         lines.append(new_line)
 
     def _handle_long_word(self, reversed_chunks, cur_line, cur_len, width):
-        """_handle_long_word(chunks : [string],
-                             cur_line : [string],
-                             cur_len : int, width : int)
-        Handle a chunk of text (most likely a word, not whitespace) that
-        is too long to fit in any line.
-        """
+        """Add a long word to a line, breaking as needed based on column width constraints."""
         # Figure out when indent is larger than the specified width, and make
         # sure at least one character is stripped off on every pass
         space_left = 1 if width < 1 else width - cur_len
@@ -2472,19 +1754,7 @@ class _CustomTextWrap(textwrap.TextWrapper):
         # devoted to the long word that we can't handle right now.
 
     def _wrap_chunks(self, chunks):
-        """
-        _wrap_chunks(chunks : [string]) -> [string] Wrap a sequence of text chunks and return a list of lines of length
-        'self.width' or less.
-
-        (If 'break_long_words' is false,
-        some lines may be longer than this.)  Chunks correspond roughly
-        to words and the whitespace between them: each chunk is
-        indivisible (modulo 'break_long_words'), but a line break can
-        come between any two chunks.  Chunks should not have internal
-        whitespace; ie. a chunk is either all whitespace or a "word".
-        Whitespace chunks will be removed from the beginning and end of
-        lines, but apart from that whitespace is preserved.
-        """
+        """Wrap text chunks in the '_CustomTextWrap' class to fit within the specified width, respecting ANSI codes."""
         lines = []
         if self.width <= 0:
             raise ValueError("invalid width %r (must be > 0)" % self.width)
@@ -2564,29 +1834,7 @@ class _CustomTextWrap(textwrap.TextWrapper):
 
 
 def _main():
-    """\
-    Usage: tabulate [options] [FILE ...]
-
-    Pretty-print tabular data.
-    See also https://github.com/astanin/python-tabulate
-
-    FILE                      a filename of the file with tabular data;
-                              if "-" or missing, read data from stdin.
-
-    Options:
-
-    -h, --help                show this message
-    -1, --header              use the first row of data as a table header
-    -o FILE, --output FILE    print table to FILE (default: stdout)
-    -s REGEXP, --sep REGEXP   use a custom column separator (default: whitespace)
-    -F FPFMT, --float FPFMT   floating point number format (default: g)
-    -I INTFMT, --int INTFMT   integer point number format (default: "")
-    -f FMT, --format FMT      set output table format; supported formats:
-                              plain, simple, grid, fancy_grid, pipe, orgtbl,
-                              rst, mediawiki, html, latex, latex_raw,
-                              latex_booktabs, latex_longtable, tsv
-                              (default: simple)
-    """
+    """Parse command-line arguments and print formatted tables; see https://github.com/astanin/python-tabulate"""
     import getopt
     import sys
     import textwrap
@@ -2662,7 +1910,7 @@ def _main():
 
 
 def _pprint_file(fobject, headers, tablefmt, sep, floatfmt, intfmt, file, colalign):
-    """Pretty prints a tabulated file with specified formatting parameters using the 'tabulate' library."""
+    """Pretty-prints tabular data from a file-like object using specified formatting parameters."""
     rows = fobject.readlines()
     table = [re.split(sep, r.rstrip()) for r in rows if r.strip()]
     print(

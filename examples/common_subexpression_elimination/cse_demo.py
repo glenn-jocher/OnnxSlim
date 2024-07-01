@@ -5,15 +5,13 @@ import torch.nn.functional as F
 
 class Model(torch.nn.Module):
     def __init__(self):
-        """Initializes the Model class with a single LayerNorm layer of embedding dimension 10."""
+        """Initializes the Model with a LayerNorm layer having an embedding dimension of 10."""
         super(Model, self).__init__()
         embedding_dim = 10
         self.layer_norm = nn.LayerNorm(embedding_dim)
 
     def forward(self, x):
-        """Applies LayerNorm to the input tensor and adds it to an independently computed LayerNorm of the same
-        tensor.
-        """
+        """Applies LayerNorm to the input tensor, then adds it to another independently computed LayerNorm of the tensor."""
         return self.layer_norm(x) + F.layer_norm(x, [10])
 
 

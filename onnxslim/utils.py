@@ -26,7 +26,7 @@ logger = logging.getLogger("ONNXSlim")
 
 
 def init_logging(verbose=False):
-    """Configure the logging settings for the application based on the verbosity level."""
+    """Configure application-wide logging settings determining verbosity level."""
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
 
@@ -53,6 +53,7 @@ def init_logging(verbose=False):
 
 
 def format_bytes(size: Union[int, Tuple[int, ...]]) -> str:
+    """Convert byte sizes into human-readable format with appropriate units (B, KB, MB, GB)."""
     if isinstance(size, int):
         size = (size,)
 
@@ -75,6 +76,7 @@ def format_bytes(size: Union[int, Tuple[int, ...]]) -> str:
 
 
 def onnx_dtype_to_numpy(onnx_dtype: int) -> np.dtype:
+    """Maps an ONNX dtype to its corresponding NumPy dtype using `onnx.mapping`."""
     import onnx.mapping as mapping
 
     return np.dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_dtype])
@@ -83,6 +85,7 @@ def onnx_dtype_to_numpy(onnx_dtype: int) -> np.dtype:
 def gen_onnxruntime_input_data(
     model: onnx.ModelProto, model_check_inputs: Optional[List[str]] = None
 ) -> Dict[str, np.ndarray]:
+    """Generate random input data for an ONNX model considering potential specific input shapes and types."""
     input_info = {}
     for input_tensor in model.graph.input:
         name = input_tensor.name
@@ -136,6 +139,7 @@ def gen_onnxruntime_input_data(
 
 
 def onnxruntime_inference(model: onnx.ModelProto, input_data: dict) -> Dict[str, np.array]:
+    """Perform inference using ONNX Runtime on the given model and input data."""
     import os
     import tempfile
 
@@ -172,7 +176,7 @@ def onnxruntime_inference(model: onnx.ModelProto, input_data: dict) -> Dict[str,
 
 
 def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elapsed_time: float = None):
-    """Prints the model information as a formatted table for the given model name and list of model details."""
+    """Prints model information as a well-formatted table including inputs, outputs, and operation counts."""
     assert model_info_list, "model_info_list must contain more than one model info"
 
     final_op_info = []
@@ -260,7 +264,7 @@ def print_model_info_as_table(model_name: str, model_info_list: List[Dict], elap
 
 
 def dump_model_info_to_disk(model_name: str, model_info: Dict):
-    """Writes model information to a CSV file for a given model name and dictionary of model info."""
+    """Writes model information to a CSV file, including node names, op types, output data types, and shapes."""
     import csv
     import os
 
@@ -299,6 +303,7 @@ def dump_model_info_to_disk(model_name: str, model_info: Dict):
 
 
 def get_opset(model: onnx.ModelProto) -> int:
+    """Returns the ONNX opset version for a given model."""
     try:
         for importer in model.opset_import:
             if importer.domain in {"", "ai.onnx"}:
@@ -310,6 +315,7 @@ def get_opset(model: onnx.ModelProto) -> int:
 
 
 def summarize_model(model: onnx.ModelProto) -> Dict:
+    """Generates a summary of the ONNX model, including model size, op types, and tensor shapes."""
     logger.debug("Start summarizing model.")
     model_info = {}
 
@@ -382,7 +388,7 @@ def summarize_model(model: onnx.ModelProto) -> Dict:
 
 
 def model_save_as_external_data(model: onnx.ModelProto, model_path: str):
-    """Save an ONNX model with tensor data as an external file."""
+    """Save an ONNX model with tensor data as a separate external file for better storage management."""
     location = f"{os.path.basename(model_path)}.data"
     if os.path.exists(location):
         os.remove(location)
@@ -396,7 +402,7 @@ def model_save_as_external_data(model: onnx.ModelProto, model_path: str):
 
 
 def check_onnx(model: onnx.ModelProto, model_check_inputs=None):
-    """Validates an ONNX model by generating input data and performing inference to check outputs."""
+    """Validates an ONNX model by running inference with generated inputs and checking the outputs."""
     input_data_dict = gen_onnxruntime_input_data(model, model_check_inputs)
     raw_onnx_output, model = onnxruntime_inference(model, input_data_dict)
 
@@ -409,6 +415,7 @@ def check_point(model: onnx.ModelProto):
 
 
 def is_converged(model: onnx.ModelProto, graph_ckpt, iter: int) -> bool:
+    """Checks if the model's graph has converged to a stable state after optimization iterations."""
     logger.debug(f"optimization iter: {iter}")
     graph = gs.import_onnx(model)
     if graph == graph_ckpt:
@@ -420,7 +427,7 @@ def is_converged(model: onnx.ModelProto, graph_ckpt, iter: int) -> bool:
 
 
 def save(model: onnx.ModelProto, model_path: str, model_check: bool = False):
-    """Save an ONNX model to a specified path, with optional model checking for validity."""
+    """Save an ONNX model to the specified path, optionally validating its integrity."""
     if model_check:
         try:
             checker.check_model(model)
@@ -447,9 +454,7 @@ def save(model: onnx.ModelProto, model_path: str, model_check: bool = False):
 
 
 def check_result(raw_onnx_output, slimmed_onnx_output):
-    """Verify the consistency of outputs between the raw and slimmed ONNX models, logging warnings if discrepancies are
-    detected.
-    """
+    """Validate consistency between raw and slimmed ONNX model outputs, logging warnings for discrepancies."""
     if set(raw_onnx_output.keys()) != set(slimmed_onnx_output.keys()):
         logger.warning("Model output mismatch after slimming.")
         logger.warning(f"Raw model output keys: {raw_onnx_output.keys()}")
@@ -492,7 +497,7 @@ def calculate_tensor_size(tensor):
 
 
 def get_model_size_and_initializer_size(model):
-    """Calculates and prints the model size and initializer size for an ONNX model in bytes."""
+    """Calculate and print the ONNX model size and its initializer size in bytes."""
     initializer_size = 0
     for tensor in model.graph.initializer:
         tensor_size = calculate_tensor_size(tensor)

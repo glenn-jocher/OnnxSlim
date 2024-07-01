@@ -37,13 +37,14 @@ from onnxslim.onnx_graphsurgeon.util import misc
 
 
 def dtype_to_onnx(dtype: Union[np.dtype, "onnx.TensorProto.DataType"]) -> int:
+    """Converts a numpy dtype or ONNX data type to its integer ONNX equivalent."""
     if isinstance(dtype, int):
         return dtype
     return onnx.helper.np_dtype_to_tensor_dtype(np.dtype(dtype))
 
 
 def check_duplicate_node_names(nodes: Sequence[Node], level=G_LOGGER.WARNING):
-    """Check if node names are unique and log any duplicates based on the specified severity level."""
+    """Check if node names are unique and log duplicates at the specified severity level."""
 
     # Note:
     # Empty string or None attribute values are not considered duplicates.
@@ -64,7 +65,7 @@ def check_duplicate_node_names(nodes: Sequence[Node], level=G_LOGGER.WARNING):
 
 
 def update_import_domains(graph):
-    """Update the import_domains field of a graph to include its ONNX opset and other used non-ONNX domains."""
+    """Update the graph's import_domains to include its ONNX opset and other utilized non-ONNX domains."""
     # as well as other non-ONNX domains which are used by this graph's nodes.
     # Returns the updated value of the import_domains field.
 
@@ -113,6 +114,7 @@ class OnnxExporter(BaseExporter):
     @staticmethod
     def export_tensor_proto(tensor: Constant) -> onnx.TensorProto:
         # Do *not* load LazyValues into an intermediate numpy array - instead, use
+        """Converts a gs.Constant tensor to an onnx.TensorProto with type conversion and lazy value handling."""
         # the original onnx.TensorProto directly.
         if isinstance(tensor._values, LazyValues):
             onnx_tensor = tensor._values.tensor
@@ -137,10 +139,12 @@ class OnnxExporter(BaseExporter):
 
     @staticmethod
     def export_sparse_tensor_proto(tensor: Constant) -> onnx.SparseTensorProto:
+        """Exports a given Constant tensor as an ONNX SparseTensorProto."""
         return tensor._values.tensor
 
     @staticmethod
     def export_value_info_proto(tensor: Tensor, do_type_check: bool) -> onnx.ValueInfoProto:
+        """Creates an ONNX ValueInfoProto for a tensor, optionally checking for dtype information."""
         if do_type_check and tensor.dtype is None:
             G_LOGGER.critical(
                 "Graph input and output tensors must include dtype information. Please set the dtype attribute for: {:}".format(
@@ -164,6 +168,7 @@ class OnnxExporter(BaseExporter):
 
     @staticmethod
     def export_attributes(attrs: dict, subgraph_tensor_map) -> List[onnx.AttributeProto]:
+        """Convert function attributes to ONNX AttributeProtos for model export."""
         onnx_attrs: List[onnx.AttributeProto] = []
         for key, val in attrs.items():
             if isinstance(val, Tensor):
@@ -197,6 +202,7 @@ class OnnxExporter(BaseExporter):
     @staticmethod
     def export_node(node: Node, subgraph_tensor_map) -> onnx.NodeProto:
         # Cannot pass in attrs directly as make_node will change the order
+        """Static method to convert an internal node to an ONNX node representation."""
         onnx_node = onnx.helper.make_node(
             node.op,
             inputs=[t.name for t in node.inputs],
@@ -209,12 +215,7 @@ class OnnxExporter(BaseExporter):
 
     @staticmethod
     def export_function(func: Function) -> onnx.FunctionProto:
-        """
-        Export an onnx-graphsurgeon Function to an ONNX FunctionProto.
-
-        Args:
-            func (Function): The function to export.
-        """
+        """Exports an onnx-graphsurgeon Function to an ONNX FunctionProto. See http://www.apache.org/licenses/LICENSE-2.0"""
         # Unlike onnx Graphs, onnx Functions don't have an 'initializer' field.
         # So we need to replace all Constant tensors with onnx Constant nodes which produce them.
         # We need to be careful to (a) preserve topological ordering and (b) not make the new nodes visible to the user.
@@ -264,15 +265,7 @@ class OnnxExporter(BaseExporter):
         subgraph_tensor_map: "OrderedDict[str, Tensor]" = None,
         do_type_check=True,
     ) -> onnx.GraphProto:
-        """
-        Export an onnx-graphsurgeon Graph to an ONNX GraphProto.
-
-        Args:
-            graph (Graph): The graph to export.
-
-            do_type_check (bool): Whether to check that input and output tensors have data types defined, and fail if not.
-                                  Defaults to True.
-        """
+        """Exports an onnx-graphsurgeon Graph to an ONNX GraphProto. (http://www.apache.org/licenses/LICENSE-2.0)"""
         check_duplicate_node_names(graph.nodes, level=G_LOGGER.WARNING)
         nodes = [OnnxExporter.export_node(node, subgraph_tensor_map) for node in graph.nodes]
         inputs = [OnnxExporter.export_value_info_proto(inp, do_type_check) for inp in graph.inputs]
@@ -322,19 +315,7 @@ class OnnxExporter(BaseExporter):
 
 
 def export_onnx(graph: Graph, do_type_check=True, **kwargs) -> "onnx.ModelProto":
-    """
-    Exports an onnx-graphsurgeon Graph to an ONNX model.
-
-    Args:
-        graph (Graph): The graph to export
-
-        do_type_check (bool): Whether to check that input and output tensors have data types defined, and fail if not.
-                              Defaults to True.
-        kwargs: Additional arguments to onnx.helper.make_model
-
-    Returns:
-        onnx.ModelProto: A corresponding ONNX model.
-    """
+    """Export an onnx-graphsurgeon Graph to an ONNX ModelProto."""
     sub_graphs = graph.subgraphs(recursive=True)
 
     graph_constants_list = [

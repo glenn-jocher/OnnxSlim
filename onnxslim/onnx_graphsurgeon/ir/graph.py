@@ -54,28 +54,7 @@ class Graph(object):
 
     @staticmethod
     def register(opsets=None):
-        """
-        Registers a function with the Graph class for the specified group of opsets. After registering the function, it
-        can be accessed like a normal member function.
-
-        For example:
-        ::
-
-            @Graph.register()
-            def add(self, a, b):
-                '''Registers a function with the Graph class for the specified group of opsets for dynamic access as a member function.'''
-                return self.layer(op="Add", inputs=[a, b], outputs=["add_out_gs"])
-
-            graph.add(a, b)
-
-        Args:
-            opsets (Sequence[int]):
-                    A group of opsets for which to register the function. Multiple functions with the same
-                    name may be registered simultaneously if they are registered for different opsets.
-                    Registering a function with a duplicate name for the same opsets will overwrite any
-                    function previously registered for those opsets.  By default, the function is
-                    registered for all opsets.
-        """
+        """Registers a function with the Graph class for dynamic access for specified opsets or all opsets."""
 
         def register_func(func):
             """Registers a function for different opsets, overwriting any previously registered function with the same
@@ -110,17 +89,7 @@ class Graph(object):
         producer_version: str = None,
         functions: "Sequence[Function]" = None,
     ):
-        """
-        Args:
-            nodes (Sequence[Node]): A list of the nodes in this graph.
-            inputs (Sequence[Tensor]): A list of graph input Tensors.
-            outputs (Sequence[Tensor]): A list of graph output Tensors.
-            name (str): The name of the graph. Defaults to "onnx_graphsurgeon_graph".
-            doc_string (str): A doc_string for the graph. Defaults to "".
-            opset (int): The ONNX opset to use when exporting this graph.
-            producer_name (str): The name of the tool used to generate the model. Defaults to "".
-            producer_version (str): The version of the generating tool. Defaults to "".
-        """
+        """Initializes a Graph object with nodes, inputs, outputs, and metadata for ONNX model creation."""
         self.nodes = misc.default_value(nodes, [])
         self.inputs = list(misc.default_value(inputs, []))
         self.outputs = list(misc.default_value(outputs, []))
@@ -146,7 +115,7 @@ class Graph(object):
         G_LOGGER.ultra_verbose(lambda: "Created Graph: {:}".format(self))
 
     def __getattr__(self, name):
-        """Dynamically handles attribute access, falling back to superclass attribute retrieval if not found."""
+        """Handles dynamic attribute access, prioritizing registered functions and subgraph attributes."""
         try:
             return super().__getattribute__(name)
         except AttributeError as err:
@@ -193,18 +162,19 @@ class Graph(object):
             raise err
 
     def __setattr__(self, name, value):
-        """Sets an attribute to the given value, converting 'inputs' and 'outputs' to lists if applicable."""
+        """Sets an attribute, converting 'inputs' and 'outputs' to lists if applicable."""
         if name in {"inputs", "outputs"}:
             value = list(value)
         return super().__setattr__(name, value)
 
     @property
     def functions(self) -> "List[Function]":
+        """Returns the list of subgraph functions associated with this graph."""
         return self._functions
 
     @functions.setter
     def functions(self, new_fns: "Sequence[Function]"):
-        """Get or set the list of functions, ensuring changes propagate to all associated subgraphs and functions."""
+        """Get or set the list of functions, ensuring consistent changes across all subgraphs and functions."""
         # this graph, its subgraphs, and its functions.
         # If the user sets a new value for self.functions,
         # all subgraphs and functions should also see this new value.
@@ -212,7 +182,7 @@ class Graph(object):
         self._functions += list(new_fns)
 
     def __eq__(self, other: "Graph"):
-        """Check for equality between two Graph objects by comparing their nodes, inputs, and outputs."""
+        """Determines if two Graph objects are equal by comparing nodes, inputs, and outputs."""
         nodes_match = misc.sequences_equal(self.nodes, other.nodes)
         if not nodes_match:
             return False
@@ -226,23 +196,12 @@ class Graph(object):
         return self.opset == other.opset and self.import_domains == other.import_domains
 
     def node_ids(self):
-        """
-        Returns a context manager that supplies unique integer IDs for Nodes in the Graph.
-
-        For example:
-        ::
-
-            with graph.node_ids():
-                assert graph.nodes[0].id != graph.nodes[1].id
-
-        Returns:
-            NodeIDAdder: A context manager that supplies unique integer IDs for Nodes.
-        """
+        """Creates a context manager to assign unique integer IDs to each node in the graph."""
         return NodeIDAdder(self)
 
     # Gets the node ID for a node. All internal code should use this instead of accessing `node.id` directly.
     def _get_node_id(self, node):
-        """Gets the node ID for a node, ensuring all internal code uses this instead of directly accessing `node.id`."""
+        """Returns the unique ID of a node, ensuring consistent internal access."""
         try:
             return node.id
         except AttributeError:
@@ -253,9 +212,7 @@ class Graph(object):
 
     # A tensor is local if it is produced in this graph, or is explicitly a graph input.
     def _local_tensors(self):
-        """Return a dictionary of tensors that are local to the graph, including nodes' outputs, graph inputs, and
-        constants.
-        """
+        """Returns tensors local to the graph including node outputs, graph inputs, and constants."""
         local_tensors = {t.name: t for node in self.nodes for t in node.outputs if not t.is_empty()}
         local_tensors.update({t.name: t for t in self.inputs})
         local_tensors.update({t.name: t for t in self.tensors().values() if isinstance(t, Constant)})
@@ -264,7 +221,7 @@ class Graph(object):
     # Returns tensors used by this graph which are not present in the graph.
     # These may come from an outer graph for example.
     def _foreign_tensors(self):
-        """Returns tensors used by this graph which are not present in the graph, potentially from an outer graph."""
+        """Returns tensors used by this graph but not present in the graph, possibly from an outer graph."""
         local_tensors = self._local_tensors()
         foreign_tensors = {}
 
@@ -286,7 +243,7 @@ class Graph(object):
         return foreign_tensors
 
     def _get_used_node_ids(self):
-        """Returns a dictionary of tensors that are used by node IDs in the current subgraph."""
+        """Identify and return IDs of nodes utilized in the current subgraph, traversing from outputs."""
         local_tensors = self._local_tensors()
 
         class IgnoreDupAndForeign(object):
@@ -350,16 +307,7 @@ class Graph(object):
             func._functions = absorb_function_list(func.functions)
 
     def subgraphs(self, recursive=False):
-        """
-        Convenience function to iterate over all subgraphs which are contained in this graph. Subgraphs are found in the
-        attributes of ONNX control flow nodes such as 'If' and 'Loop'.
-
-        Args:
-            recursive (bool): Whether to recursively search this graph's subgraphs for more subgraphs. Defaults to False.
-
-        Returns:
-            A generator which iterates over the subgraphs contained in this graph.
-        """
+        """Iterate over subgraphs in control flow nodes within the graph, optionally recursively."""
         for node in self.nodes:
             yield from node.subgraphs(recursive=recursive)
 
@@ -370,30 +318,7 @@ class Graph(object):
         remove_unused_graph_inputs=False,
         recurse_functions=True,
     ):
-        """
-        Removes unused nodes and tensors from the graph. A node or tensor is considered unused if it does not contribute
-        to any of the graph outputs.
-
-        Additionally, any producer nodes of graph input tensors, as well as consumer nodes of graph output
-        tensors that are not in the graph, are removed from the graph.
-
-        *Note: This function will never modify graph output tensors.*
-
-        Args:
-            remove_unused_node_outputs (bool): Whether to remove unused output tensors of nodes. This will never remove
-                empty-tensor (i.e. optional, but omitted) outputs. Defaults to False.
-            recurse_subgraphs (bool):
-                    Whether to recursively cleanup subgraphs.
-                    Defaults to True.
-            remove_unused_graph_inputs (bool):
-                    Whether to remove unused graph inputs.
-                    Defaults to False.
-            recurse_functions (bool):
-                    Whether to also clean up this graph's local functions.
-                    Defaults to True.
-        Returns:
-            self
-        """
+        """Removes unused nodes and tensors from the graph, with options to clean subgraphs and functions."""
 
         def cleanup_subgraphs():
             """Clean up subgraphs by removing unused node outputs and graph inputs, optionally recursing into subgraphs
@@ -474,29 +399,7 @@ class Graph(object):
         recurse_functions=True,
         mode="full",
     ):
-        """
-        Topologically sort the graph in place.
-
-        Args:
-            recurse_subgraphs (bool):
-                    Whether to recursively topologically sort subgraphs.
-                    Only applicable when mode="full" or mode="nodes".
-                    Defaults to True.
-            recurse_functions (bool):
-                    Whether to topologically sort the nodes of this graph's functions.
-                    Only applicable when mode="full" or mode="nodes".
-                    Defaults to True.
-            mode (str):
-                    Whether to reorder this graph's list of nodes, list of functions, or both.
-                    Possible values:
-                    - "full": Topologically sort the list of nodes and the list of functions.
-                    - "nodes": Only sort the list of nodes.
-                    - "functions": Only sort the list of functions.
-                    Defaults to "full".
-
-        Returns:
-            self
-        """
+        """Topologically sort the graph nodes and functions based on their dependencies."""
 
         ALLOWED_MODES = ["full", "nodes", "functions"]
         if mode not in ALLOWED_MODES:
@@ -623,21 +526,7 @@ class Graph(object):
         return self
 
     def tensors(self, check_duplicates=False):
-        """
-        Creates a tensor map of all the tensors used by this graph by walking over all nodes. Empty tensors are omitted
-        from this map.
-
-        Tensors are guaranteed to be in order of the nodes in the graph. Hence, if the graph is topologically sorted, the tensor map will be too.
-
-        Args:
-            check_duplicates (bool): Whether to fail if multiple tensors with the same name are encountered.
-
-        Raises:
-            OnnxGraphSurgeonException: If check_duplicates is True and multiple distinct tensors in the graph share the same name.
-
-        Returns:
-            OrderedDict[str, Tensor]: A mapping of tensor names to tensors.
-        """
+        """Creates an ordered map of non-empty tensors used by the graph with optional duplicate name checks."""
         tensor_map = OrderedDict()
 
         def add_to_tensor_map(tensor):
@@ -687,64 +576,7 @@ class Graph(object):
         should_exclude_node=None,
         recurse_functions=True,
     ):
-        """
-        Folds constants in-place in the graph. The graph's nodes and functions must be topologically sorted prior to
-        calling this function (see `toposort()`).
-
-        This function will not remove constants after folding them. In order to get rid of
-        these hanging nodes, you can run the `cleanup()` function.
-
-        *Note: Due to how this function is implemented, the graph must be exportable to ONNX,
-        and evaluable in ONNX-Runtime. Additionally, ONNX-Runtime must be installed.*
-
-        Args:
-            fold_shapes (bool):
-                    Whether to fold `Shape` nodes in the graph.
-                    This requires shapes to be inferred in the graph, and can only fold
-                    static shapes.
-                    Defaults to True.
-            recurse_subgraphs (bool):
-                    Whether to recursively fold constants in subgraphs.
-                    Defaults to True.
-            partitioning (Union[str, None]):
-                    Whether/How to partition the graph so that errors in folding one
-                    part of a model do not affect other parts. Available modes are:
-
-                    - None: Do not partition the graph. If inference fails, no constants are folded.
-                    - "basic": Partition the graph. If inference fails in one partition, other partitions will
-                            remain unaffected.
-                    - "recursive": Partition the graph recursively. If inference fails in a partition, the partition
-                            will be further partitioned.
-
-                    Defaults to None.
-            error_ok (bool):
-                    Whether inference errors should be suppressed.
-                    When this is False, any errors encountered during inference will be re-raised.
-                    Defaults to True.
-            flatten_subgraphs (bool):
-                    Whether to flatten subgraphs where possible. For example, `If` nodes with a constant condition
-                    can be flattened into the parent graph.
-            size_threshold (int):
-                    The maximum size threshold, in bytes, for which to fold constants.
-                    Any tensors larger than this value will not be folded.
-                    Set to ``None`` to disable the size threshold and always fold constants.
-                    For example, some models may apply ops like `Tile` or `Expand` to constants, which can
-                    result in very large tensors. Rather than pre-computing those constants and bloating
-                    the model size, it may be desirable to skip folding them and allow them to be computed
-                    at runtime.
-                    Defaults to None.
-            should_exclude_node (Callable[[gs.Node], bool]):
-                    A callable that accepts an onnx-graphsurgeon node from the graph and reports whether it should
-                    be excluded from folding. This is only called for nodes which are otherwise foldable.
-                    Note that preventing a node from being folded also prevents its consumers from being folded.
-                    Defaults to a callable that always returns False.
-            recurse_functions (bool):
-                    Whether to fold constants in this graph's Functions.
-                    Defaults to True.
-
-        Returns:
-            self
-        """
+        """Folds constant tensors in the graph and its subgraphs using ONNX-Runtime; requires topological sorting."""
         from onnxslim.onnx_graphsurgeon.exporters.onnx_exporter import (
             dtype_to_onnx,
             export_onnx,
@@ -1325,9 +1157,7 @@ class Graph(object):
         return self
 
     def _generate_name(self, prefix: str, existing_names: set):
-        """Generate a unique name by appending an index to the given prefix, ensuring it does not clash with existing
-        names.
-        """
+        """Generate a unique name using the specified prefix and avoiding clashes with existing names."""
         # Generation is done by appending an index to the prefix.
         while True:
             name = f"{prefix}_{self.name_idx}"
@@ -1337,37 +1167,7 @@ class Graph(object):
         return name
 
     def layer(self, inputs=None, outputs=None, *args, **kwargs):
-        """
-        Creates a node, adds it to this graph, and optionally creates its input and output tensors.
-
-        The input and output lists can include various different types:
-
-            - ``Tensor``:
-                    Any Tensors provided will be used as-is in the inputs/outputs of the node created.
-                    Therefore, you must ensure that the provided Tensors have unique names.
-            - ``str``:
-                    If a string is provided, this function will generate a new tensor using
-                    the string to generate a name. It will append an index to the end of the provided string
-                    to guarantee unique names.
-            - ``numpy.ndarray``:
-                    If a NumPy array is provided, this function will generate a Constant tensor
-                    using the name prefix: "onnx_graphsurgeon_constant", and append an index to the end
-                    of the prefix to guarantee unique names.
-            - ``Union[List[Number], Tuple[Number]]``:
-                    If a list or tuple of numbers (int or float) is provided, this function will
-                    generate a Constant tensor using the name prefix: "onnx_graphsurgeon_lst_constant",
-                    and append an index to the end of the prefix to guarantee unique names.
-                    The values of the tensor will be a 1D array containing the specified values.
-                    The datatype will be either `np.float32` or `np.int64`.
-
-        Args:
-            inputs (List[Union[Tensor, str, numpy.ndarray]]): The list of inputs
-            outputs (List[Union[Tensor, str, numpy.ndarray]]): The list of outputs
-            args/kwargs: These are passed directly to the constructor of Node
-
-        Returns:
-            List[Tensor]: The output tensors of the node
-        """
+        """Creates a node, adds it to the graph, and optionally creates its input and output tensors."""
         inputs = misc.default_value(inputs, [])
         outputs = misc.default_value(outputs, [])
 
@@ -1416,21 +1216,7 @@ class Graph(object):
         return node.outputs
 
     def copy(self, tensor_map: "OrderedDict[str, Tensor]" = None):
-        """
-        Copy the graph.
-
-        This makes copies of all nodes and tensors in the graph, but will not
-        do a deep-copy of weights or attributes (with the exception of ``Graph``
-        attributes, which will be copied using their ``copy`` method).
-
-        Args:
-            tensor_map (OrderedDict[str, Tensor]):
-                A mapping of tensor names to tensors from the outer graph.
-                This should be ``None`` if this is the outer-most graph.
-
-        Returns:
-            Graph: A copy of the graph.
-        """
+        """Return a deep copy of the current graph, duplicating all nodes and tensors."""
         # First, reconstruct each tensor in the graph, but with no inputs or outputs
         tensor_map = copy.copy(misc.default_value(tensor_map, {}))
 
@@ -1471,9 +1257,7 @@ class Graph(object):
         )
 
     def __str__(self):
-        """Return a string representation of the graph including its name, opset, local functions, inputs, nodes, and
-        outputs.
-        """
+        """Return the string representation of the graph including name, opset, functions, inputs, nodes, and outputs."""
         nodes_str = "\n".join([str(node) for node in self.nodes])
         functions_str = ",".join([str(func.name) for func in self.functions])
         out = f"Graph {self.name} (Opset {self.opset})"
@@ -1484,5 +1268,5 @@ class Graph(object):
         return out
 
     def __repr__(self):
-        """Returns a string representation of the object."""
+        """Returns a string representation of the Graph object with its essential attributes."""
         return self.__str__()

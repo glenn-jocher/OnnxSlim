@@ -29,7 +29,7 @@ class Tensor(object):
     DYNAMIC = -1
 
     def __init__(self):
-        """**This class is abstract and cannot be constructed directly.**"""
+        """Initializes the Tensor class, serving as an abstract base class for tensors in a computational graph."""
         raise NotImplementedError("Tensor is an abstract class")
 
     def __setattr__(self, name, value):
@@ -50,15 +50,7 @@ class Tensor(object):
             super().__setattr__(name, value)
 
     def is_empty(self):
-        """
-        Returns whether this tensor is considered empty in the graph.
-
-        *Note: 'Empty' here refers to the name of the tensor, which is omitted for
-        optional tensors, NOT the shape of the tensor*
-
-        Returns:
-            bool: Whether the tensor is empty, meaning that it is used for an omitted optional input or output.
-        """
+        """Determines if the tensor is used for an omitted optional input or output."""
         return self.name == ""
 
     def to_constant(
@@ -67,21 +59,7 @@ class Tensor(object):
         data_location: int = None,
         export_dtype: Union[np.dtype, "onnx.TensorProto.DataType"] = None,
     ):
-        """
-        Modifies this tensor in-place to convert it to a Constant. This means that all consumers/producers of the tensor
-        will see the update.
-
-        Args:
-            values (np.ndarray): The values in this tensor
-
-            data_location (int):
-                    An enum value indicating the location where the tensor data is stored.
-                    Generally, this will come from onnx.TensorProto.DataLocation.
-
-            dtype (Union[numpy.dtype, onnx.TensorProto.DataType]): The data type of the tensor.
-        Returns:
-            self
-        """
+        """Converts this tensor to a constant with specified values, data location, and data type."""
         self.__class__ = Constant
         self._values = values
         self.data_location = data_location
@@ -92,17 +70,7 @@ class Tensor(object):
     def to_variable(
         self, dtype: Union[np.dtype, "onnx.TensorProto.DataType"] = None, shape: Sequence[Union[int, str]] = None
     ):
-        """
-        Modifies this tensor in-place to convert it to a Variable. This means that all consumers/producers of the tensor
-        will see the update.
-
-        Args:
-            dtype (Union[numpy.dtype, onnx.TensorProto.DataType]): The data type of the tensor.
-            shape (Sequence[int]): The shape of the tensor.
-
-        Returns:
-            self
-        """
+        """Converts this tensor in-place to a Variable, updating all its consumers/producers accordingly."""
 
         if shape is None:
             shape = []
@@ -115,65 +83,30 @@ class Tensor(object):
         return self
 
     def i(self, tensor_idx=0, producer_idx=0):
-        """
-        Convenience function to get an input tensor of one of this tensor's input nodes. Note that the parameters are
-        swapped compared to the o() function; this is because tensors are likely to have only a single producer.
-
-        For example:
-        ::
-
-            assert tensor.i() == tensor.inputs[0].inputs[0]
-            assert tensor.i(1, 2) == tensor.inputs[2].inputs[1]
-
-        Args:
-            tensor_idx (int): The index of the input tensor of the input node. Defaults to 0.
-            producer_idx (int): The index of the producer node of the input tensor, if the tensor has multiple producers. Defaults to 0.
-
-        Returns:
-            Tensor: The specified producer (input) tensor.
-        """
+        """Returns the input tensor at the given index for a specified producer node in the graph."""
         return self.inputs[producer_idx].inputs[tensor_idx]
 
     def o(self, consumer_idx=0, tensor_idx=0):
-        """
-        Convenience function to get an output tensor of one of this tensor's output nodes.
-
-        For example:
-        ::
-
-            assert tensor.o() == tensor.outputs[0].outputs[0]
-            assert tensor.o(2, 1) == tensor.outputs[2].outputs[1]
-
-        Args:
-            consumer_idx (int): The index of the consumer of the input tensor. Defaults to 0.
-            tensor_idx (int): The index of the output tensor of the node, if the node has multiple outputs. Defaults to 0.
-
-        Returns:
-            Tensor: The specified consumer (output) tensor
-        """
+        """Retrieve an output tensor from this tensor's specified output node and tensor indices."""
         return self.outputs[consumer_idx].outputs[tensor_idx]
 
     def __str__(self):
-        """Returns a string representation of the object including its type, name, shape, and data type."""
+        """Returns a string with the tensor's type, name, shape, and data type representation."""
         return "{:} ({:}): (shape={:}, dtype={:})".format(type(self).__name__, self.name, self.shape, self.dtype)
 
     def __repr__(self):  # Hack to make logging output pretty.
-        """Returns a string representation of the object for logging output."""
+        """Returns a string representation of the Tensor object for logging output."""
         return self.__str__()
 
     def __eq__(self, other):
-        """
-        Perform a check to see if two tensors are equal.
-
-        Tensors are considered equal if they share the same name. A Graph must not include Tensors with duplicate names.
-        """
+        """Check if two tensors are equal based on their names."""
         return self.name == other.name
 
 
 class Variable(Tensor):
     @staticmethod
     def empty():
-        """Create and return an empty Variable tensor with an empty name."""
+        """Creates and returns an empty Variable tensor with an empty name."""
         return Variable(name="")
 
     def __init__(
@@ -183,15 +116,7 @@ class Variable(Tensor):
         shape: Sequence[Union[int, str]] = None,
         type: str = "tensor_type",
     ):
-        """
-        Represents a Tensor whose value is not known until inference-time.
-
-        Args:
-            name (str): The name of the tensor.
-            dtype (Union[numpy.dtype, onnx.TensorProto.DataType]): The data type of the tensor.
-            shape (Sequence[Union[int, str]]): The shape of the tensor. This may contain strings if the model uses dimension parameters.
-            type (str): The type of the tensor.
-        """
+        """Initialize a Variable tensor with name, data type, shape, and type attributes."""
         self.name = name
         self.inputs = misc.SynchronizedList(self, field_name="outputs", initial=[])
         self.outputs = misc.SynchronizedList(self, field_name="inputs", initial=[])
@@ -204,21 +129,18 @@ class Variable(Tensor):
         values: np.ndarray,
         export_dtype: Union[np.dtype, "onnx.TensorProto.DataType"] = None,
     ):
+        """Modify a variable tensor in-place to convert it to a constant tensor with specified values and data type."""
         del self.dtype
         del self.shape
 
         return super().to_constant(values, export_dtype=export_dtype)
 
     def copy(self):
-        """
-        Makes a shallow copy of this tensor, omitting input and output information.
-
-        Note: Generally, you should only ever make a copy of a Graph.
-        """
+        """Creates a shallow copy of the tensor, excluding its input and output connections."""
         return Variable(self.name, self.dtype, self.shape)
 
     def __eq__(self, other):
-        """Perform a check to see if two variables are equal."""
+        """Check if two Variable instances are equal by comparing names, inputs, outputs, dtype, shape, and type."""
         if not isinstance(other, Variable):
             return False
 
@@ -241,10 +163,7 @@ class LazyValues(object):
     """A special object that represents constant tensor values that should be lazily loaded."""
 
     def __init__(self, tensor):
-        """
-        Args:
-            tensor (onnx.TensorProto, onnx.SparseTensorProto): The ONNX tensor that this instance should lazily load.
-        """
+        """Initialize the LazyValues object with the given ONNX tensor for lazy loading."""
         from onnxslim.onnx_graphsurgeon.importers.onnx_importer import (
             get_itemsize,
             get_onnx_tensor_dtype,
@@ -257,12 +176,7 @@ class LazyValues(object):
         self.nbytes = misc.volume(self.shape) * get_itemsize(self.dtype)
 
     def load(self):
-        """
-        Load a numpy array from the underlying tensor values.
-
-        Returns:
-            np.array: A numpy array containing the values of the tensor.
-        """
+        """Load a numpy array from the tensor's underlying values."""
         import onnx
         import onnx.numpy_helper
 
@@ -290,7 +204,7 @@ class LazyValues(object):
         return self.__str__()
 
     def __eq__(self, other):
-        """Perform a check to see if two variables are equal."""
+        """Check if two LazyValues instances have equal tensor data, shape, and dtype."""
         if not isinstance(other, LazyValues):
             return False
 
@@ -305,12 +219,7 @@ class SparseValues(LazyValues):
     """A special object that represents constant tensor values that is sparse."""
 
     def load(self):
-        """
-        Load a numpy array from the sparse structure.
-
-        Returns:
-            np.array: A numpy array containing the values of the tensor.
-        """
+        """Loads a numpy array from the sparse tensor structure."""
         import onnx
         import onnx.numpy_helper
 
@@ -347,7 +256,7 @@ class SparseValues(LazyValues):
         return values
 
     def __str__(self):
-        """Return a string representation of the SparseValues object with its shape and data type."""
+        """Returns a formatted string representation of the SparseValues object indicating its shape and dtype."""
         return "SparseValues (shape={:}, dtype={:})".format(self.shape, self.dtype)
 
 
@@ -359,22 +268,7 @@ class Constant(Tensor):
         data_location: int = None,
         export_dtype: Union[np.dtype, "onnx.TensorProto.DataType"] = None,
     ):
-        """
-        Represents a Tensor whose value is known.
-
-        Args:
-            name (str): The name of the tensor.
-            values (numpy.ndarray): The values in this tensor, in the form of a NumPy array.
-
-            data_location (int):
-                    An enum value indicating the location where the tensor data is stored.
-                    Generally, this will come from onnx.TensorProto.DataLocation.
-
-
-            export_dtype (Union[np.dtype, onnx.TensorProto.DataType]):
-                    The data type of the tensor when exported to onnx. If not specified, then
-                    the data type of values will be used.
-        """
+        """Initializes a Constant tensor with specific values, data location, and optional export data type."""
         self.name = name
         self.inputs = misc.SynchronizedList(self, field_name="outputs", initial=[])
         self.outputs = misc.SynchronizedList(self, field_name="inputs", initial=[])
@@ -407,53 +301,49 @@ class Constant(Tensor):
         return super().to_variable(var_dtype, shape)
 
     def copy(self):
-        """
-        Makes a shallow copy of this tensor, omitting input and output information.
-
-        Note: Generally, you should only ever make a copy of a Graph.
-        """
+        """Creates a shallow copy of the Constant tensor, excluding inputs and outputs."""
         return Constant(self.name, self._values, export_dtype=self.export_dtype)
 
     @property
     def values(self):
-        """Return the values of the tensor, loading them if they are accessed for the first time."""
+        """Retrieve tensor values, lazily loading them if accessed for the first time."""
         if isinstance(self._values, LazyValues):
             self._values = self._values.load()
         return self._values
 
     @values.setter
     def values(self, values: Union[np.ndarray, LazyValues]):
-        """Return the values of the tensor, loading them if accessed for the first time."""
+        """Return tensor values, loading them if being accessed for the first time."""
         self._values = values
 
     @property
     def shape(self):
-        """Return the shape of the tensor values."""
+        """Retrieve the shape of the tensor values."""
         return self._values.shape
 
     @property
     def dtype(self):
-        """Return the data type (dtype) of the tensor values."""
+        """Retrieve the data type (dtype) of this tensor's values."""
         return self._values.dtype
 
     @property
     def export_dtype(self):
-        """Return the export data type (export_dtype) of the tensor values if specified, otherwise None."""
+        """Returns the export data type (export_dtype) for this Constant tensor."""
         return self._export_dtype if self._export_dtype is not None else self.dtype
 
     @export_dtype.setter
     def export_dtype(self, export_dtype):
-        """Return the export data type of tensor values if specified, otherwise return the default data type."""
+        """Get the tensor's export data type, defaulting to its current dtype if unspecified."""
         self._export_dtype = export_dtype
 
     def __repr__(self):  # Hack to make logging output pretty.
-        """Return a string representation of the object, including its values, for improved logging readability."""
+        """Returns a string representation of the Constant object, including its values, for logging purposes."""
         ret = self.__str__()
         ret += "\n{:}".format(self._values)
         return ret
 
     def __eq__(self, other):
-        """Perform a check to see if two variables are equal."""
+        """Compare two `Constant` tensors for equality based on their values."""
         if not isinstance(other, Constant):
             return False
 

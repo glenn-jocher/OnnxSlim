@@ -20,7 +20,7 @@ DEFAULT_FUSION_PATTERNS = OrderedDict()
 
 
 def register_fusion_pattern(fusion_pattern):
-    """Registers a fusion pattern function for a specified layer type in the DEFAULT_FUSION_PATTERNS dictionary."""
+    """Registers a fusion pattern function for a layer type in DEFAULT_FUSION_PATTERNS dict."""
     layer_type = fusion_pattern.name
 
     if layer_type in DEFAULT_FUSION_PATTERNS.keys():
@@ -29,7 +29,7 @@ def register_fusion_pattern(fusion_pattern):
 
 
 def get_fusion_patterns(skip_fusion_patterns: str = None):
-    """Returns a copy of the default fusion patterns, optionally excluding specific patterns."""
+    """Returns a copy of default fusion patterns, optionally excluding specified ones."""
     default_fusion_patterns = DEFAULT_FUSION_PATTERNS.copy()
     if skip_fusion_patterns:
         for pattern in skip_fusion_patterns:
@@ -39,7 +39,7 @@ def get_fusion_patterns(skip_fusion_patterns: str = None):
 
 
 def get_node_users(node):
-    """Retrieve the list of nodes that use the outputs of the given node."""
+    """Retrieve the list of nodes that consume the outputs of a given node."""
     users = []
     for output in node.outputs:  # output is a Variable
         users.extend(iter(output.outputs))
@@ -47,7 +47,7 @@ def get_node_users(node):
 
 
 def get_node_feeds(node):
-    """Retrieve the list of nodes that provide inputs to the given node."""
+    """Retrieve the list of nodes that provide inputs to the given ONNX node."""
     feeds = []
     for input in node.inputs:  # input is a Variable
         feeds.extend(iter(input.inputs))
@@ -68,14 +68,14 @@ def get_previous_node_by_type(node, op_type, trajectory=None):
 
 
 def get_constant_variable(node, return_idx=False):
-    """Return the first constant variable found in a node's inputs, optionally including the index."""
+    """Return the first constant variable in a node's inputs, optionally including its index."""
     for idx, input in enumerate(list(node.inputs)):
         if isinstance(input, Constant):
             return (idx, input) if return_idx else input
 
 
 def delete_node(node, input_var_idx=0, output_var_idx=0):
-    """Delete a node from the computation graph while re-linking its input and output to maintain graph integrity."""
+    """Re-link node's inputs and outputs while maintaining graph integrity before deleting the node."""
     input_variable = node.inputs[input_var_idx]
     node_variable = node.outputs[output_var_idx]
     next_nodes = get_node_users(node)
@@ -92,7 +92,7 @@ def delete_node(node, input_var_idx=0, output_var_idx=0):
 
 
 def check_shape(shapes):
-    """Verify that 'shapes' contains exactly one string and all other elements are positive integers."""
+    """Verify 'shapes' has one string and all other elements as positive integers."""
     string_count = 0
     non_negative_int_count = 0
 
@@ -106,9 +106,7 @@ def check_shape(shapes):
 
 
 def graph_constant_fold_inplace(graph):
-    """Perform in-place constant folding optimizations on the given computational graph by eliminating redundant
-    nodes.
-    """
+    """Optimize ONNX computational graph in-place by folding constants and removing redundant nodes."""
     for subgraph in graph.subgraphs():
         graph_constant_fold_inplace(subgraph)
 
@@ -177,6 +175,7 @@ def graph_constant_fold_inplace(graph):
 
 class PadConvMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a PadConvMatcher object with the given pattern matching priority."""
         pattern = Pattern(
             """
             input  input  0 1 pad_0
@@ -193,56 +192,12 @@ class PadConvMatcher(PatternMatcher):
         return "FusionPadConv"
 
     def parameter_check(self):
-        """Validates if the padding parameter for a convolutional node is a constant."""
-        pad_node = self.pad_0
+        """Validates match conditions and parameters for the Pad and Conv layers in the fusion pattern."""
 
 
 def parameter_check(self) -> bool:
+    """Validates if the padding parameter for a convolutional node is a constant."""
     return isinstance(pad_node.inputs[1], Constant)
-
-    def rewrite(self):
-        """Rewrites the padding parameter for a convolutional node to use a constant if the current parameter is not a
-        constant.
-        """
-        node = self.conv_0
-        pad_node = self.pad_0
-        input_variable = self.pad_0.inputs[0]
-
-        pad_value = pad_node.inputs[1].values.tolist()
-        input_variable.outputs.remove(pad_node)
-
-        pad_variable = pad_node.outputs[0]  # pad output variable
-        index = node.inputs.index(pad_variable)
-        node.inputs.pop(index)
-        node.inputs.insert(index, input_variable)
-
-        inputs = list(node.inputs)
-        outputs = list(node.outputs)
-        attrs = node.attrs
-
-        node.inputs.clear()
-        node.outputs.clear()
-        pad_node.inputs.clear()
-        pad_node.outputs.clear()
-        conv_pads = attrs["pads"]
-        len_conv_pads = len(conv_pads) // 2
-
-        len_pads = len(pad_value) // 2
-        pads = pad_value[len_pads - len_conv_pads : len_pads] + pad_value[len_pads + len_conv_pads :]
-
-        pads = [pad + conv_pad for pad, conv_pad in zip(pads, conv_pads)]
-        attrs["pads"] = pads
-
-        return {
-            node.name: {
-                "op": "Conv",
-                "inputs": inputs,
-                "outputs": outputs,
-                "name": node.name,
-                "attrs": node.attrs,
-                "domain": None,
-            }
-        }
 
 
 register_fusion_pattern(PadConvMatcher(1))
@@ -250,6 +205,7 @@ register_fusion_pattern(PadConvMatcher(1))
 
 class ConvBatchNormMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a ConvBatchNormMatcher with a priority and a specified pattern for matching Conv-BatchNorm layers."""
         pattern = Pattern(
             """
             input              input  0 1 conv_0
@@ -266,7 +222,7 @@ class ConvBatchNormMatcher(PatternMatcher):
         return "FusionConvBN"
 
     def rewrite(self):
-        """Rewrites the weights and biases of a BatchNormalization layer fused with a convolution layer."""
+        """Optimizes Conv and BatchNormalization layers by fusing weights and biases for efficient inference."""
         match_case = {}
         conv_transpose_node = self.conv_0
         conv_transpose_node_users = get_node_users(conv_transpose_node)
@@ -330,6 +286,7 @@ register_fusion_pattern(ConvBatchNormMatcher(1))
 
 class SlicePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the SlicePatternMatcher with a specific fusion pattern and priority."""
         pattern = Pattern(
             """
             input  input   0 1 slice_0
@@ -346,7 +303,7 @@ class SlicePatternMatcher(PatternMatcher):
         return "EliminationSlice"
 
     def rewrite(self):
-        """Rewrites an elimination pattern for slice nodes by optimizing nested slice operations."""
+        """Rewrites nested slice operations by merging their parameters for optimization."""
         match_case = {}
         first_slice_node = self.slice_0
         first_slice_node_inputs = list(first_slice_node.inputs)
@@ -432,6 +389,7 @@ register_fusion_pattern(SlicePatternMatcher(1))
 
 class ReshapePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the ReshapePatternMatcher with a specified pattern matching priority."""
         pattern = Pattern(
             """
             input    input   0 1 reshape_0
@@ -444,13 +402,11 @@ class ReshapePatternMatcher(PatternMatcher):
 
     @property
     def name(self):
-        """Returns the name 'EliminationReshape'."""
+        """Returns the name 'EliminationReshape' to identify reshape fusion patterns."""
         return "EliminationReshape"
 
     def rewrite(self):
-        """Rewrite the computational graph by eliminating redundant reshape operations when certain conditions are
-        met.
-        """
+        """Rewrites the computational graph by eliminating sequential reshape operations under specific conditions."""
         match_case = {}
         node = self.reshape_1
         first_reshape_node = node.i(0)
@@ -500,6 +456,7 @@ register_fusion_pattern(ReshapePatternMatcher(1))
 
 class MatMulAddPatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a MatMulAddPatternMatcher for detecting and handling MatMul-Add operation sequences."""
         pattern = Pattern(
             """
             input    input    0 1 matmul_0
@@ -516,9 +473,7 @@ class MatMulAddPatternMatcher(PatternMatcher):
         return "FusionGemm"
 
     def rewrite(self):
-        """Rewrites the graph for the fusion pattern 'FusionGemm' based on matching criteria and constant variables in
-        matmul nodes.
-        """
+        """Optimizes MatMul-Add patterns to Gemm operations in the computational graph."""
         match_case = {}
         node = self.add_0
         matmul_node = self.matmul_0
@@ -667,6 +622,7 @@ register_fusion_pattern(MatMulAddPatternMatcher(1))
 
 class GeluPatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes a GeluPatternMatcher instance with a specific priority for pattern fusion."""
         pattern = Pattern(
             """
             input  input  0 2 mul_0 div_0
@@ -686,7 +642,7 @@ class GeluPatternMatcher(PatternMatcher):
         return "FusionGelu"
 
     def rewrite(self):
-        """Rewrite the computation graph pattern to fuse GELU operations."""
+        """Rewrite the computation graph pattern to fuse GELU operations efficiently."""
         input_variable = self.div_0.inputs[0]
         mul_node = self.mul_0
         div_node = self.div_0
@@ -712,6 +668,7 @@ class GeluPatternMatcher(PatternMatcher):
 
 class ReducePatternMatcher(PatternMatcher):
     def __init__(self, priority):
+        """Initializes the ReducePatternMatcher with a specific fusion pattern and priority level."""
         pattern = Pattern(
             """
             input     input       0 1 reduce_0
@@ -728,7 +685,7 @@ class ReducePatternMatcher(PatternMatcher):
         return "FusionReduce"
 
     def rewrite(self, opset=11):
-        """Rewrites the graph pattern based on opset version; reuses Reduce and Unsqueeze nodes if possible."""
+        """Rewrites Reduce + Unsqueeze patterns to maintain keepdims consistency for opset versions < 13."""
         match_case = {}
         node = self.unsqueeze_0
         reduce_node = self.reduce_0
@@ -773,6 +730,7 @@ def replace_custom_layer(
     attrs: dict = None,
     domain: str = "ai.onnx.contrib",
 ):
+    """Replace custom layers in the graph with specified operator, inputs, outputs, attributes, and domain."""
     return self.layer(
         op=op,
         inputs=inputs,
@@ -784,7 +742,7 @@ def replace_custom_layer(
 
 
 def find_matches(graph: Graph, fusion_patterns: dict):
-    """Find matching patterns in the graph based on provided fusion patterns."""
+    """Identify and map fusion patterns in the computational graph for optimization."""
     match_map = {}
     counter = Counter()
     for node in reversed(graph.nodes):
@@ -806,7 +764,7 @@ def find_matches(graph: Graph, fusion_patterns: dict):
 
 
 def find_and_remove_replaceable_nodes(nodes):
-    """Find and remove duplicate or replaceable nodes in a given list of computational graph nodes."""
+    """Locate and eliminate redundant or replaceable nodes in a computational graph."""
 
     def get_node_key(node):
         input_names = []
@@ -853,7 +811,7 @@ def find_and_remove_replaceable_nodes(nodes):
 
 
 def sequences_equal(seq1, seq2):
-    """Check if two sequences are equal by comparing their lengths and elements."""
+    """Compare two sequences for equality by checking their lengths and elements."""
     length_match = len(seq1) == len(seq2)
     if not length_match:
         return False
@@ -862,7 +820,7 @@ def sequences_equal(seq1, seq2):
 
 
 def can_be_replaced(node, other_node):
-    """Check if two nodes can be replaced based on their operations, attributes, and inputs."""
+    """Check if nodes can be replaced based on their operations, attributes, and inputs similarity."""
     attrs_match = node.op == other_node.op and node.attrs == other_node.attrs
     inputs_match = sequences_equal(node.inputs, other_node.inputs)
 
@@ -870,7 +828,7 @@ def can_be_replaced(node, other_node):
 
 
 def subexpression_elimination(graph):
-    """Perform subexpression elimination on a computational graph to optimize node operations."""
+    """Optimize computational graph by eliminating redundant subexpressions to improve efficiency."""
     nodes_by_op = {}
 
     for node in graph.nodes:
@@ -884,6 +842,7 @@ def subexpression_elimination(graph):
 
 
 def optimize_model(model: Union[onnx.ModelProto, gs.Graph], skip_fusion_patterns: str = None) -> onnx.ModelProto:
+    """Optimize and fuse layers of a given ONNX model using registered fusion patterns."""
     graph = model if isinstance(model, gs.Graph) else gs.import_onnx(model)
     fusion_patterns = get_fusion_patterns(skip_fusion_patterns)
     fusion_pairs = find_matches(graph, fusion_patterns)

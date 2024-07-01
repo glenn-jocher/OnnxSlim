@@ -21,41 +21,7 @@ def slim(
     model_check_inputs: str = None,
     verbose: bool = False,
 ):
-    """
-    Slims down or optimizes an ONNX model.
-
-    Args:
-        model (Union[str, onnx.ModelProto]): The ONNX model to be slimmed. It can be either a file path or an `onnx.ModelProto` object.
-
-        output_model (str, optional): File path to save the slimmed model. If None, the model will not be saved.
-
-        model_check (bool, optional): Flag indicating whether to perform model checking. Default is False.
-
-        input_shapes (str, optional): String representing the input shapes. Default is None.
-
-        outputs (str, optional): String representing the outputs. Default is None.
-
-        no_shape_infer (bool, optional): Flag indicating whether to perform shape inference. Default is False.
-
-        no_constant_folding (bool, optional): Flag indicating whether to perform constant folding. Default is False.
-
-        dtype (str, optional): Data type. Default is None.
-
-        skip_fusion_patterns (str, optional): String representing fusion patterns to skip. Default is None.
-
-        inspect (bool, optional): Flag indicating whether to inspect the model. Default is False.
-
-        dump_to_disk (bool, optional): Flag indicating whether to dump the model detail to disk. Default is False.
-
-        save_as_external_data (bool, optional): Flag indicating whether to split onnx as model and weight. Default is False.
-
-        model_check_inputs (str, optional): The shape or tensor used for model check. Default is None.
-
-        verbose (bool, optional): Flag indicating whether to print verbose logs. Default is False.
-
-    Returns:
-        onnx.ModelProto/None: If `output_model` is None, return slimmed model else return None.
-    """
+    """Optimizes and slims down an ONNX model, optionally saving the result and performing validation checks."""
     import os
     import time
     from pathlib import Path
@@ -161,7 +127,7 @@ def slim(
 
 
 def main():
-    """Entry point for the OnnxSlim toolkit, processes command-line arguments and passes them to the slim function."""
+    """Entry point for the OnnxSlim toolkit, processes command-line arguments and invokes the slim function."""
     import argparse
 
     import onnxslim

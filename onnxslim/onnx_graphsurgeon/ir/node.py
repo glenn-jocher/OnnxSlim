@@ -48,18 +48,7 @@ class Node(object):
         outputs: List["Tensor"] = None,
         domain: str = None,
     ):
-        """
-        A node represents an operation in a graph, and consumes zero or more Tensors, and produces zero or more Tensors.
-
-        Args:
-            op (str): The operation this node performs.
-
-            name (str): The name of this node.
-            attrs (Dict[str, object]): A dictionary that maps attribute names to their values.
-            inputs (List[Tensor]): A list of zero or more input Tensors.
-            outputs (List[Tensor]): A list of zero or more output Tensors.
-            domain (str): The domain of this node,
-        """
+        """Initializes a Node representing an operation in a graph with attributes, inputs, and outputs."""
         self.op = op
         self.name = misc.default_value(name, "")
         self.attrs = misc.default_value(attrs, OrderedDict())
@@ -68,55 +57,15 @@ class Node(object):
         self.domain = domain
 
     def i(self, tensor_idx=0, producer_idx=0):
-        """
-        Convenience function to get a producer node of one of this node's input tensors. Note that the parameters are
-        swapped compared to the o() function; this is because tensors are likely to have only a single producer.
-
-        For example:
-        ::
-
-            assert node.i() == node.inputs[0].inputs[0]
-            assert node.i(1, 2) == node.inputs[1].inputs[2]
-
-        Args:
-            tensor_idx (int): The index of the input tensor of this node. Defaults to 0.
-            producer_idx (int): The index of the producer of the input tensor, if the tensor has multiple producers. Defaults to 0
-
-        Returns:
-            Node: The specified producer (input) node.
-        """
+        """Fetches a producer node of this node's input tensor at the specified indices, defaults to (0, 0)."""
         return self.inputs[tensor_idx].inputs[producer_idx]
 
     def o(self, consumer_idx=0, tensor_idx=0):
-        """
-        Convenience function to get a consumer node of one of this node's output tensors.
-
-        For example:
-        ::
-
-            assert node.o() == node.outputs[0].outputs[0]
-            assert node.o(2, 1) == node.outputs[1].outputs[2]
-
-        Args:
-            consumer_idx (int): The index of the consumer of the input tensor. Defaults to 0.
-            tensor_idx (int): The index of the output tensor of this node, if the node has multiple outputs. Defaults to 0.
-
-        Returns:
-            Node: The specified consumer (output) node
-        """
+        """Retrieve a consumer node of a specified output tensor from this node."""
         return self.outputs[tensor_idx].outputs[consumer_idx]
 
     def subgraphs(self, recursive=False):
-        """
-        Convenience function to iterate over all subgraphs which are contained in this node. Node subgraphs are found in
-        attributes of ONNX control flow nodes such as 'If' and 'Loop'.
-
-        Args:
-            recursive (bool): Whether to recurse into the subgraph nodes when looking for subgraphs. Defaults to False.
-
-        Returns:
-            A generator which iterates over this node's subgraphs.
-        """
+        """Iterate over all subgraphs contained in this node, with optional recursive exploration."""
         from onnxslim.onnx_graphsurgeon.ir.graph import Graph
 
         visit_queue = [self]
@@ -134,7 +83,7 @@ class Node(object):
                     yield attr
 
     def __setattr__(self, name, value):
-        """Sets the attribute 'name' to 'value', handling special cases for 'inputs' and 'outputs' attributes."""
+        """Sets the attribute 'name' to 'value', with special handling for 'inputs' and 'outputs' attributes."""
         if name in {"inputs", "outputs"}:
             try:
                 attr = getattr(self, name)
@@ -156,11 +105,7 @@ class Node(object):
         outputs: List["Tensor"] = None,
         tensor_map=None,
     ):
-        """
-        Makes a shallow copy of this node, overriding input and output information.
-
-        Note: Generally, you should only ever make a copy of a Graph.
-        """
+        """Shallowly copies the node with the option to override inputs, outputs, and tensor mappings."""
         from onnxslim.onnx_graphsurgeon.ir.graph import Graph
 
         new_attrs = OrderedDict()
@@ -176,7 +121,7 @@ class Node(object):
         )
 
     def __str__(self):
-        """Return a string representation of the object showing its name and operation."""
+        """Returns a string representation of the node, displaying its name, operation, inputs, outputs, and attributes."""
         ret = "{:} ({:})".format(self.name, self.op)
 
         def add_io(name, io):
@@ -199,11 +144,11 @@ class Node(object):
         return ret
 
     def __repr__(self):
-        """Return the string representation of the Ultralytics object."""
+        """Return the string representation of the Node object."""
         return self.__str__()
 
     def __eq__(self, other):
-        """Check whether two nodes are equal by comparing name, attributes, op, inputs, and outputs."""
+        """Check whether two nodes are equal by comparing the name, attributes, op, inputs, and outputs."""
         G_LOGGER.verbose("Comparing node: {:} with {:}".format(self.name, other.name))
         attrs_match = self.name == other.name and self.op == other.op and self.attrs == other.attrs
         if not attrs_match:
