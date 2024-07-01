@@ -83,7 +83,11 @@ class Function(Graph):
         remove_unused_graph_inputs=False,
         recurse_functions=False,
     ):
-        """Cleans up the function graph, removing unused nodes and tensors. See http://www.apache.org/licenses/LICENSE-2.0"""
+        """
+        Cleans up the function graph, removing unused nodes and tensors.
+
+        See http://www.apache.org/licenses/LICENSE-2.0
+        """
         if recurse_functions:
             G_LOGGER.warning(
                 "Function.cleanup() called with recurse_functions=True, meaning that other functions will also be cleaned up."

@@ -1257,7 +1257,9 @@ class Graph(object):
         )
 
     def __str__(self):
-        """Return the string representation of the graph including name, opset, functions, inputs, nodes, and outputs."""
+        """Return the string representation of the graph including name, opset, functions, inputs, nodes, and
+        outputs.
+        """
         nodes_str = "\n".join([str(node) for node in self.nodes])
         functions_str = ",".join([str(func.name) for func in self.functions])
         out = f"Graph {self.name} (Opset {self.opset})"

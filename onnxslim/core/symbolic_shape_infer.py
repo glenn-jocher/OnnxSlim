@@ -266,7 +266,9 @@ class SymbolicShapeInference:
         self.prefix_ = prefix
 
     def _add_suggested_merge(self, symbols, apply=False):
-        """Add suggested merges for input symbols, prioritizing literals, input symbolic dims, or existing symbolic dims."""
+        """Add suggested merges for input symbols, prioritizing literals, input symbolic dims, or existing symbolic
+        dims.
+        """
         assert all((type(s) == str and s in self.symbolic_dims_) or is_literal(s) for s in symbols)
         symbols = set(symbols)
         for k, v in self.suggested_merge_.items():
@@ -1517,7 +1519,9 @@ class SymbolicShapeInference:
             )
 
     def _infer_aten_argmax(self, node):
-        """Infers the output shape for the ONNX ATen argmax operation based on input tensor, dimension, and keepdim parameters."""
+        """Infers the output shape for the ONNX ATen argmax operation based on input tensor, dimension, and keepdim
+        parameters.
+        """
         new_shape = None
         if not node.input[1]:
             # The argmax of the flattened input is returned.
@@ -1845,7 +1849,9 @@ class SymbolicShapeInference:
         self.sympy_data_[node.output[0]] = self._get_sympy_shape(node, 0)
 
     def _infer_Size(self, node):  # noqa: N802
-        """Infers and sets the size of the output node by computing the product of its shape in the computation graph."""
+        """Infers and sets the size of the output node by computing the product of its shape in the computation
+        graph.
+        """
         sympy_shape = self._get_sympy_shape(node, 0)
         self.sympy_data_[node.output[0]] = sympy_reduce_product(sympy_shape)
         self.known_vi_[node.output[0]].CopyFrom(
@@ -2125,7 +2131,9 @@ class SymbolicShapeInference:
         self._pass_on_sympy_data(node)
 
     def _infer_Tile(self, node):  # noqa: N802
-        """Infers the output shape for the Tile operation in a computation graph based on input shape and repeat values."""
+        """Infers the output shape for the Tile operation in a computation graph based on input shape and repeat
+        values.
+        """
         repeats_value = self._try_get_value(node, 1)
         new_sympy_shape = []
         if repeats_value is not None:
@@ -2172,7 +2180,9 @@ class SymbolicShapeInference:
             vi.CopyFrom(helper.make_tensor_value_info(node.output[i_o], vi.type.tensor_type.elem_type, new_shape))
 
     def _infer_Transpose(self, node):  # noqa: N802
-        """Infers and updates the shape information for a Transpose node based on its input shape and permutation attributes."""
+        """Infers and updates the shape information for a Transpose node based on its input shape and permutation
+        attributes.
+        """
         if node.input[0] in self.sympy_data_:
             data_shape = self._get_shape(node, 0)
             perm = get_attribute(node, "perm", reversed(list(range(len(data_shape)))))
@@ -2234,7 +2244,9 @@ class SymbolicShapeInference:
         vi.CopyFrom(new_vi)
 
     def _infer_Attention(self, node):  # noqa: N802
-        """Infer the output shape and data type for ONNX Attention node outputs, handling input and parameter dimensions."""
+        """Infer the output shape and data type for ONNX Attention node outputs, handling input and parameter
+        dimensions.
+        """
         shape = self._get_shape(node, 0)
         shape_weights = self._get_shape(node, 1)
         shape_bias = self._try_get_shape(node, 2)
@@ -2605,7 +2617,9 @@ class SymbolicShapeInference:
         self._propagate_shape_and_type(node)
 
     def _infer_RotaryEmbedding(self, node):  # noqa: N802
-        """Infer the output shape and type for a RotaryEmbedding node by appropriately propagating input shape and type information."""
+        """Infer the output shape and type for a RotaryEmbedding node by appropriately propagating input shape and type
+        information.
+        """
         if len(node.output) == 1:
             self._propagate_shape_and_type(node)
         elif len(node.output) == 2:
@@ -2680,7 +2694,7 @@ class SymbolicShapeInference:
         return dim_value not in self.symbolic_dims_ if "unk__" in dim_value else False
 
     def _is_shape_contains_none_dim(self, out_shape):
-        """Check if the shape contains 'None' dimension and return the dimensi"""
+        """Check if the shape contains 'None' dimension and return the dimensi."""
         for out in out_shape:
             if self._is_none_dim(out):
                 return out

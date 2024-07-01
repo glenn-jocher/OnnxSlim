@@ -215,7 +215,11 @@ class OnnxExporter(BaseExporter):
 
     @staticmethod
     def export_function(func: Function) -> onnx.FunctionProto:
-        """Exports an onnx-graphsurgeon Function to an ONNX FunctionProto. See http://www.apache.org/licenses/LICENSE-2.0"""
+        """
+        Exports an onnx-graphsurgeon Function to an ONNX FunctionProto.
+
+        See http://www.apache.org/licenses/LICENSE-2.0
+        """
         # Unlike onnx Graphs, onnx Functions don't have an 'initializer' field.
         # So we need to replace all Constant tensors with onnx Constant nodes which produce them.
         # We need to be careful to (a) preserve topological ordering and (b) not make the new nodes visible to the user.
@@ -265,7 +269,11 @@ class OnnxExporter(BaseExporter):
         subgraph_tensor_map: "OrderedDict[str, Tensor]" = None,
         do_type_check=True,
     ) -> onnx.GraphProto:
-        """Exports an onnx-graphsurgeon Graph to an ONNX GraphProto. (http://www.apache.org/licenses/LICENSE-2.0)"""
+        """
+        Exports an onnx-graphsurgeon Graph to an ONNX GraphProto.
+
+        (http://www.apache.org/licenses/LICENSE-2.0)
+        """
         check_duplicate_node_names(graph.nodes, level=G_LOGGER.WARNING)
         nodes = [OnnxExporter.export_node(node, subgraph_tensor_map) for node in graph.nodes]
         inputs = [OnnxExporter.export_value_info_proto(inp, do_type_check) for inp in graph.inputs]

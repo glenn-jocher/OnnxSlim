@@ -198,7 +198,9 @@ def _moin_row_with_attrs(celltag, cell_values, colwidths, colaligns, header=""):
 
 
 def _latex_line_begin_tabular(colwidths, colaligns, booktabs=False, longtable=False):
-    """Generate a LaTeX tabular or longtable environment string based on column widths, alignments, and format options."""
+    """Generate a LaTeX tabular or longtable environment string based on column widths, alignments, and format
+    options.
+    """
     alignment = {"left": "l", "right": "r", "center": "c", "decimal": "r"}
     tabular_columns_fmt = "".join([alignment.get(a, "l") for a in colaligns])
     return "\n".join(
@@ -927,7 +929,9 @@ def _choose_width_fn(has_invisible, enable_widechars, is_multiline):
 
 
 def _align_column_choose_padfn(strings, alignment, has_invisible):
-    """Selects appropriate padding function for aligning table columns based on given alignment and invisible character handling."""
+    """Selects appropriate padding function for aligning table columns based on given alignment and invisible character
+    handling.
+    """
     if alignment == "right":
         if not PRESERVE_WHITESPACE:
             strings = [s.strip() for s in strings]
@@ -954,7 +958,9 @@ def _align_column_choose_padfn(strings, alignment, has_invisible):
 
 
 def _align_column_choose_width_fn(has_invisible, enable_widechars, is_multiline):
-    """Choose the appropriate width function for aligning text columns considering visibility, wide chars, and multiline."""
+    """Choose the appropriate width function for aligning text columns considering visibility, wide chars, and
+    multiline.
+    """
     if has_invisible:
         line_width_fn = _visible_width
     elif enable_widechars:  # optional wide-character support if available
@@ -1332,7 +1338,11 @@ def tabulate(
     rowalign=None,
     maxheadercolwidths=None,
 ):
-    """Pretty-print tabular data. See: https://github.com/ultralytics/ultralytics"""
+    """
+    Pretty-print tabular data.
+
+    See: https://github.com/ultralytics/ultralytics
+    """
 
     if tabular_data is None:
         tabular_data = []
@@ -1560,7 +1570,9 @@ def _append_basic_row(lines, padded_cells, colwidths, colaligns, rowfmt, rowalig
 
 
 def _align_cell_veritically(text_lines, num_lines, column_width, row_alignment):
-    """Align a cell's text vertically within a table column based on the specified number of lines, width, and alignment."""
+    """Align a cell's text vertically within a table column based on the specified number of lines, width, and
+    alignment.
+    """
     delta_lines = num_lines - len(text_lines)
     blank = [" " * column_width]
     if row_alignment == "bottom":
@@ -1695,7 +1707,9 @@ class _CustomTextWrap(textwrap.TextWrapper):
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize `_CustomTextWrap` with support for wide characters, relational width calculations, and custom wrapping logic."""
+        """Initialize `_CustomTextWrap` with support for wide characters, relational width calculations, and custom
+        wrapping logic.
+        """
         self._active_codes = []
         self.max_lines = None  # For python2 compatibility
         textwrap.TextWrapper.__init__(self, *args, **kwargs)

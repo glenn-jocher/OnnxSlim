@@ -205,7 +205,9 @@ register_fusion_pattern(PadConvMatcher(1))
 
 class ConvBatchNormMatcher(PatternMatcher):
     def __init__(self, priority):
-        """Initializes a ConvBatchNormMatcher with a priority and a specified pattern for matching Conv-BatchNorm layers."""
+        """Initializes a ConvBatchNormMatcher with a priority and a specified pattern for matching Conv-BatchNorm
+        layers.
+        """
         pattern = Pattern(
             """
             input              input  0 1 conv_0

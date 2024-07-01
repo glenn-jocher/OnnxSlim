@@ -295,7 +295,8 @@ class OnnxImporter(BaseImporter):
         import_domains: onnx.OperatorSetIdProto,
     ) -> Node:
         # Optional inputs/outputs are represented by empty tensors. All other tensors should already have been populated during shape inference.
-        """Imports an ONNX node, configuring attributes, inputs, and outputs for graph integrati"""
+        """Imports an ONNX node, configuring attributes, inputs, and outputs for graph integrati."""
+
         def get_tensor(name: str, check_outer_graph=True):
             """Retrieve a tensor by its name, prioritizing the subgraph tensor map and optionally checking the outer
             graph.

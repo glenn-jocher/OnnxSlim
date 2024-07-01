@@ -121,7 +121,9 @@ class Node(object):
         )
 
     def __str__(self):
-        """Returns a string representation of the node, displaying its name, operation, inputs, outputs, and attributes."""
+        """Returns a string representation of the node, displaying its name, operation, inputs, outputs, and
+        attributes.
+        """
         ret = "{:} ({:})".format(self.name, self.op)
 
         def add_io(name, io):
