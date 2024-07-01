@@ -3,7 +3,6 @@ import os
 import pytest
 import torch
 import torch.nn as nn
-
 from onnxslim import slim
 from onnxslim.utils import print_model_info_as_table, summarize_model
 
