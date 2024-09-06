@@ -28,6 +28,7 @@ from onnxslim.third_party.onnx_graphsurgeon.util.exception import (
 
 # Context manager to apply indentation to messages
 class LoggerIndent(object):
+    """Context manager for temporarily setting indentation levels in logger messages."""
     def __init__(self, logger, indent):
         """Initialize the LoggerIndent context manager with the specified logger and indentation level."""
         self.logger = logger
@@ -46,6 +47,7 @@ class LoggerIndent(object):
 
 # Context manager to suppress messages
 class LoggerSuppress(object):
+    """Suppress logger messages below a specified severity level within a context."""
     def __init__(self, logger, severity):
         """Initialize a LoggerSuppress object with a logger and severity level."""
         self.logger = logger
@@ -63,11 +65,13 @@ class LoggerSuppress(object):
 
 
 class LogMode(enum.IntEnum):
+    """Enumerates logging modes for controlling message frequency in the Ultralytics library."""
     EACH = 0  # Log the message each time
     ONCE = 1  # Log the message only once. The same message will not be logged again.
 
 
 class Logger(object):
+    """Manages logging with configurable severity, indentation, and formatting for debugging and monitoring."""
     ULTRA_VERBOSE = -10
     VERBOSE = 0
     DEBUG = 10

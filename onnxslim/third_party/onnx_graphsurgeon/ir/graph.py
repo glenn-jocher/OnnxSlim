@@ -29,6 +29,7 @@ from onnxslim.third_party.onnx_graphsurgeon.util import misc
 
 
 class NodeIDAdder(object):
+    """Assigns unique IDs to graph nodes on entry and removes them on exit for context management."""
     def __init__(self, graph):
         """Initializes NodeIDAdder with a specified graph."""
         self.graph = graph

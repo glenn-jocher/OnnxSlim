@@ -19,6 +19,7 @@ from onnxslim.third_party.onnx_graphsurgeon.ir.graph import Graph
 
 
 class BaseExporter(object):
+    """BaseExporter provides a static method to export ONNX graphs to a specified destination format."""
     @staticmethod
     def export_graph(graph: Graph):
         """

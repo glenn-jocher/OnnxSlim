@@ -189,6 +189,7 @@ def get_onnx_tensor_type(onnx_tensor: Union[onnx.ValueInfoProto, onnx.TensorProt
 
 
 class OnnxImporter(BaseImporter):
+    """Imports ONNX models, functions, and tensors into internal representations for further processing."""
     @staticmethod
     def get_opset(model_or_func: Union[onnx.ModelProto, onnx.FunctionProto]):
         """Return the ONNX opset version for the given ONNX model or function, or None if the information is

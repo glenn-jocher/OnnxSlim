@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 
 class Model(torch.nn.Module):
+    """A PyTorch model applying LayerNorm to input tensors for normalization in neural network layers."""
     def __init__(self):
         """Initializes the Model class with a single LayerNorm layer of embedding dimension 10."""
         super(Model, self).__init__()

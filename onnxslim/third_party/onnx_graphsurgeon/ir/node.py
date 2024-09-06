@@ -25,6 +25,7 @@ from onnxslim.third_party.onnx_graphsurgeon.util import misc
 
 
 class Node(object):
+    """Represents an operation node in a computational graph, managing inputs, outputs, and attributes."""
     @dataclass
     class AttributeRef:
         """

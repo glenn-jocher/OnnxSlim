@@ -9,6 +9,7 @@ from onnxslim.utils import print_model_info_as_table, summarize_model
 
 
 class TestPatternMatcher:
+    """Tests various neural network operations by exporting PyTorch models to ONNX and analyzing them with onnxslim."""
     def test_gelu(self, request):
         """Test the GELU activation function in a neural network model using an instance of nn.Module."""
 
@@ -215,6 +216,7 @@ class TestPatternMatcher:
         ),
     )
     def test_consecutive_unsqueeze(self, request, opset):
+        """Tests consecutive unsqueeze operations in a model by exporting to ONNX and summarizing the slimmed model."""
         class Model(nn.Module):
             def __init__(self):
                 super(Model, self).__init__()

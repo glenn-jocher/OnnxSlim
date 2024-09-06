@@ -12,6 +12,7 @@ FILENAME = f"{MODELZOO_PATH}/resnet18/resnet18.onnx"
 
 
 class TestFunctional:
+    """Tests the functionality of the 'slim' function for optimizing ONNX models using temporary directories."""
     def test_basic(self, request):
         """Test the basic functionality of the slim function."""
         with tempfile.TemporaryDirectory() as tempdir:
@@ -30,6 +31,7 @@ class TestFunctional:
 
 
 class TestFeature:
+    """Tests ONNX model modifications like input shape, precision conversion, and input/output adjustments."""
     def test_input_shape_modification(self, request):
         """Test the modification of input shapes."""
         summary = summarize_model(slim(FILENAME, input_shapes=["input:1,3,224,224"]))
