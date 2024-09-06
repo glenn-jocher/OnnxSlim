@@ -139,6 +139,7 @@ def sympy_reduce_product(x):
 
 class SymbolicShapeInference:
     """Performs symbolic shape inference on ONNX models to deduce tensor shapes using symbolic computation."""
+
     def __init__(self, int_max, auto_merge, guess_output_rank, verbose, prefix=""):
         """Initializes the SymbolicShapeInference class with configuration parameters for symbolic shape inference."""
         self.dispatcher_ = {
@@ -2838,8 +2839,7 @@ class SymbolicShapeInference:
                         sorted_known_vi.update(node.output)
                         sorted_nodes.append(node)
                 if old_sorted_nodes_len == len(sorted_nodes) and any(
-                    o.name not in sorted_known_vi
-                    for o in self.out_mp_.graph.output
+                    o.name not in sorted_known_vi for o in self.out_mp_.graph.output
                 ):
                     raise Exception("Invalid model with cyclic graph")
 
@@ -2939,11 +2939,7 @@ class SymbolicShapeInference:
                 out_type_undefined = out_type.tensor_type.elem_type == onnx.TensorProto.UNDEFINED
                 if self.verbose_ > 2:
                     logger.debug(
-                        "  {}: {} {}".format(
-                            node.output[i_o],
-                            str(out_shape),
-                            onnx.TensorProto.DataType.Name(vi.type.tensor_type.elem_type),
-                        )
+                        f"  {node.output[i_o]}: {str(out_shape)} {onnx.TensorProto.DataType.Name(vi.type.tensor_type.elem_type)}"
                     )
                     if node.output[i_o] in self.sympy_data_:
                         logger.debug("  Sympy Data: " + str(self.sympy_data_[node.output[i_o]]))
@@ -3046,17 +3042,11 @@ class SymbolicShapeInference:
                             if self.verbose_ > 0:
                                 if is_unknown_op:
                                     logger.debug(
-                                        "Possible unknown op: {} node: {}, guessing {} shape".format(
-                                            node.op_type, node.name, vi.name
-                                        )
+                                        f"Possible unknown op: {node.op_type} node: {node.name}, guessing {vi.name} shape"
                                     )
                                 if self.verbose_ > 2:
                                     logger.debug(
-                                        "  {}: {} {}".format(
-                                            node.output[i_o],
-                                            str(new_shape),
-                                            vi.type.tensor_type.elem_type,
-                                        )
+                                        f"  {node.output[i_o]}: {str(new_shape)} {vi.type.tensor_type.elem_type}"
                                     )
                             self.run_ = True
                             continue  # continue the inference after guess, no need to stop as no merge is needed

@@ -111,6 +111,7 @@ class CheckerArguments:
 
 class ArgumentParser:
     """Parses command-line arguments into specified dataclasses for ONNX model optimization and modification tasks."""
+
     def __init__(self, *argument_dataclasses: Type):
         """Initializes the ArgumentParser with dataclass types for parsing ONNX model optimization arguments."""
         self.argument_dataclasses = argument_dataclasses

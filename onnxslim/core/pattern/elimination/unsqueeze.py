@@ -7,6 +7,7 @@ from onnxslim.core.pattern.registry import register_fusion_pattern
 
 class UnsqueezePatternMatcher(PatternMatcher):
     """Matches and optimizes nested unsqueeze patterns in ONNX graphs to improve computational efficiency."""
+
     def __init__(self, priority):
         """Initializes the UnsqueezePatternMatcher with a specified priority using a predefined graph pattern."""
         pattern = Pattern(
@@ -30,10 +31,19 @@ class UnsqueezePatternMatcher(PatternMatcher):
         node_unsqueeze_0 = self.unsqueeze_0
         users_node_unsqueeze_0 = get_node_users(node_unsqueeze_0)
         node_unsqueeze_1 = self.unsqueeze_1
-        if len(users_node_unsqueeze_0) == 1 and node_unsqueeze_0.inputs[0].shape and node_unsqueeze_1.inputs[0].shape and (opset < 13 or (
-                        isinstance(node_unsqueeze_0.inputs[1], gs.Constant)
-                        and isinstance(node_unsqueeze_1.inputs[1], gs.Constant)
-                    )):
+        if (
+            len(users_node_unsqueeze_0) == 1
+            and node_unsqueeze_0.inputs[0].shape
+            and node_unsqueeze_1.inputs[0].shape
+            and (
+                opset < 13
+                or (
+                    isinstance(node_unsqueeze_0.inputs[1], gs.Constant)
+                    and isinstance(node_unsqueeze_1.inputs[1], gs.Constant)
+                )
+            )
+        ):
+
             def get_unsqueeze_axes(unsqueeze_node, opset):
                 dim = len(unsqueeze_node.inputs[0].shape)
                 if opset < 13:
@@ -41,22 +51,21 @@ class UnsqueezePatternMatcher(PatternMatcher):
                 else:
                     axes = unsqueeze_node.inputs[1].values
                 return [axis + dim + len(axes) if axis < 0 else axis for axis in axes]
-        
+
             axes_node_unsqueeze_0 = get_unsqueeze_axes(node_unsqueeze_0, opset)
             axes_node_unsqueeze_1 = get_unsqueeze_axes(node_unsqueeze_1, opset)
-        
+
             axes_node_unsqueeze_0 = [
-                axis + sum(bool(axis_ <= axis)
-                       for axis_ in axes_node_unsqueeze_1) for axis in axes_node_unsqueeze_0
+                axis + sum(bool(axis_ <= axis) for axis_ in axes_node_unsqueeze_1) for axis in axes_node_unsqueeze_0
             ]
-        
+
             inputs = [node_unsqueeze_0.inputs[0]]
             outputs = list(node_unsqueeze_1.outputs)
             node_unsqueeze_0.inputs.clear()
             node_unsqueeze_0.outputs.clear()
             node_unsqueeze_1.inputs.clear()
             node_unsqueeze_1.outputs.clear()
-        
+
             if opset < 13:
                 attrs = {"axes": axes_node_unsqueeze_0 + axes_node_unsqueeze_1}
             else:
@@ -67,7 +76,7 @@ class UnsqueezePatternMatcher(PatternMatcher):
                         values=np.array(axes_node_unsqueeze_0 + axes_node_unsqueeze_1, dtype=np.int64),
                     )
                 )
-        
+
             match_case[node_unsqueeze_0.name] = {
                 "op": "Unsqueeze",
                 "inputs": inputs,

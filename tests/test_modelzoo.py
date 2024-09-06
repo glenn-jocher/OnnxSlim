@@ -13,6 +13,7 @@ MODELZOO_PATH = "/data/modelzoo"
 
 class TestModelZoo:
     """Tests ONNX models from the model zoo using slimming techniques for validation."""
+
     def test_silero_vad(self, request):
         """Test the Silero VAD model by slimming its ONNX file and running inference with dummy input data."""
         name = request.node.originalname[len("test_") :]
